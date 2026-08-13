@@ -568,7 +568,7 @@ export const componentRegistry: ComponentRegistry = {
         required: false,
       },
     ],
-    version: "2.0.0",
+    version: "2.0.1",
     author: "QiuYeDx",
     tags: [
       "segmented-control",
