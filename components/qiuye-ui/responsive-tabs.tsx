@@ -48,7 +48,7 @@ export interface ResponsiveTabsProps {
   /** Tab 面板内容（`TabsContent` 区域），不传则不渲染内容区域 */
   children?: React.ReactNode;
   /**
-   * 是否在 responsive / scroll 模式发生横向溢出时显示左右滚动箭头按钮
+   * 是否在支持 hover 的设备上，在 responsive / scroll 模式发生横向溢出且悬停 Tab 区域时显示左右滚动箭头按钮
    * @default true
    */
   scrollButtons?: boolean;
@@ -110,7 +110,7 @@ export interface ResponsiveTabsProps {
  * 基于 shadcn/ui Tabs 扩展，根据可用空间自动调整布局：
  * - **空间充足**：所有 Tab 在单行内等宽分配，充分利用容器宽度
  * - **空间不足**：以最长 Tab 的文案、图标和徽标所需宽度作为所有选项的统一最小宽度，并横向滚动
- * - **滚动提示**：支持左右箭头按钮和渐变遮罩
+ * - **滚动提示**：支持渐变遮罩；仅在支持 hover 的设备上显示左右箭头按钮
  *
  * 支持三种布局模式：`responsive`（统一等宽并在必要时滚动）、`scroll`（按内容宽度滚动）、`grid`（按配置列数等分换行）。
  * 每个 Tab 选项支持图标、徽标、禁用等配置。
@@ -173,10 +173,34 @@ const ResponsiveTabs = React.forwardRef<
     const [showRightButton, setShowRightButton] = React.useState(false);
     const [showLeftFade, setShowLeftFade] = React.useState(false);
     const [showRightFade, setShowRightFade] = React.useState(false);
+    const [hasHoverDevice, setHasHoverDevice] = React.useState(false);
+    const [isTabAreaHovered, setIsTabAreaHovered] = React.useState(false);
 
     const isScrollAll = layout === "scroll";
     const isGridAll = layout === "grid";
     const isResponsive = layout === "responsive";
+    const scrollBehavior: ScrollBehavior = hasHoverDevice ? "smooth" : "auto";
+
+    // 仅在支持 hover 的设备上显示箭头；触摸设备直接通过手势横向滚动。
+    useEffect(() => {
+      const mediaQuery = window.matchMedia(
+        "(hover: hover) and (pointer: fine)",
+      );
+      const updateHoverCapability = () => setHasHoverDevice(mediaQuery.matches);
+      updateHoverCapability();
+      if (typeof mediaQuery.addEventListener === "function") {
+        mediaQuery.addEventListener("change", updateHoverCapability);
+        return () =>
+          mediaQuery.removeEventListener("change", updateHoverCapability);
+      }
+
+      const legacyMediaQuery = mediaQuery as unknown as {
+        addListener: (listener: () => void) => void;
+        removeListener: (listener: () => void) => void;
+      };
+      legacyMediaQuery.addListener(updateHoverCapability);
+      return () => legacyMediaQuery.removeListener(updateHoverCapability);
+    }, []);
 
     // 更新滚动按钮和遮罩状态 —— 基于 scrollerRef
     const checkScrollAffordance = React.useCallback(() => {
@@ -200,35 +224,48 @@ const ResponsiveTabs = React.forwardRef<
     const scrollByDir = (dir: "left" | "right") => {
       const el = scrollerRef.current;
       if (!el) return;
-      el.scrollBy({
-        left: dir === "left" ? -scrollStep : scrollStep,
-        behavior: "smooth",
+      const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+      const delta = dir === "left" ? -scrollStep : scrollStep;
+      const targetLeft = Math.min(
+        maxScroll,
+        Math.max(0, el.scrollLeft + delta),
+      );
+      el.scrollTo({
+        left: targetLeft,
+        behavior: scrollBehavior,
       });
     };
 
     // 滚到激活项（只移动 scroller，不动背景）
-    const scrollToActiveTab = React.useCallback(() => {
-      const scroller = scrollerRef.current;
-      const list = tabsListRef.current;
-      if (!scroller || !list) return;
+    const scrollToActiveTab = React.useCallback(
+      (behavior: ScrollBehavior = scrollBehavior) => {
+        const scroller = scrollerRef.current;
+        const list = tabsListRef.current;
+        if (!scroller || !list) return;
 
-      const active = list.querySelector<HTMLElement>('[data-state="active"]');
-      if (!active) return;
+        const active = list.querySelector<HTMLElement>('[data-state="active"]');
+        if (!active) return;
 
-      const cRect = scroller.getBoundingClientRect();
-      const aRect = active.getBoundingClientRect();
-      const fullyVisible =
-        aRect.left >= cRect.left && aRect.right <= cRect.right;
+        const cRect = scroller.getBoundingClientRect();
+        const aRect = active.getBoundingClientRect();
+        const fullyVisible =
+          aRect.left >= cRect.left && aRect.right <= cRect.right;
 
-      if (!fullyVisible) {
-        const targetLeft =
-          active.offsetLeft - (scroller.clientWidth - active.clientWidth) / 2;
-        scroller.scrollTo({
-          left: Math.max(0, targetLeft),
-          behavior: "smooth",
-        });
-      }
-    }, []);
+        if (!fullyVisible) {
+          const targetLeft =
+            active.offsetLeft - (scroller.clientWidth - active.clientWidth) / 2;
+          const maxScroll = Math.max(
+            0,
+            scroller.scrollWidth - scroller.clientWidth,
+          );
+          scroller.scrollTo({
+            left: Math.min(maxScroll, Math.max(0, targetLeft)),
+            behavior,
+          });
+        }
+      },
+      [scrollBehavior],
+    );
 
     // 监听滚动与尺寸变化
     useEffect(() => {
@@ -241,14 +278,14 @@ const ResponsiveTabs = React.forwardRef<
 
       const ro = new ResizeObserver(() => {
         checkScrollAffordance();
-        scrollToActiveTab();
+        scrollToActiveTab("auto");
       });
       ro.observe(el);
       if (rowRef.current) ro.observe(rowRef.current);
 
       const onWinResize = () => {
         checkScrollAffordance();
-        scrollToActiveTab();
+        scrollToActiveTab("auto");
       };
       window.addEventListener("resize", onWinResize);
 
@@ -293,8 +330,8 @@ const ResponsiveTabs = React.forwardRef<
     // value 改变时，确保激活项可见
     useEffect(() => {
       if (isGridAll) return;
-      scrollToActiveTab();
-    }, [value, isGridAll, scrollToActiveTab]);
+      scrollToActiveTab(scrollBehavior);
+    }, [value, isGridAll, scrollBehavior, scrollToActiveTab]);
 
     // 类名计算
     // 外层相对定位容器，仅用于放置按钮/遮罩层（不承担滚动）
@@ -324,12 +361,12 @@ const ResponsiveTabs = React.forwardRef<
     const scrollerClass = cn(
       "w-full",
       sizeClasses.gutter,
-      isGridAll ? "overflow-visible" : "overflow-x-auto",
+      isGridAll ? "overflow-visible" : "overflow-x-auto overflow-y-hidden",
       // 隐藏滚动条
       !isGridAll &&
         "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
-      // 阻断 inline 方向滚动链
-      "overscroll-contain",
+      // 阻断横向滚动链，避免 iOS Safari 将触摸惯性传递给页面
+      "overscroll-x-contain",
     );
 
     // responsive 使用 max-content 计算所有等宽列所需的最小宽度：
@@ -367,69 +404,85 @@ const ResponsiveTabs = React.forwardRef<
         className={cn("w-full", className)}
         {...props}
       >
-        <div className={outerRelativeClass}>
+        <div
+          className={outerRelativeClass}
+          onPointerEnter={() => setIsTabAreaHovered(true)}
+          onPointerLeave={() => setIsTabAreaHovered(false)}
+        >
           {/* 左侧按钮 */}
           <AnimatePresence>
-            {scrollButtons && !isGridAll && showLeftButton && (
-              <motion.div
-                className={cn(
-                  "absolute top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/80 p-0 shadow-md backdrop-blur-sm origin-left",
-                  isSm ? "left-0.5 h-6 w-6" : "left-1 h-8 w-8",
-                )}
-                initial={{ opacity: 0, scale: 0, x: -10 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0, x: -10 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
+            {scrollButtons &&
+              !isGridAll &&
+              showLeftButton &&
+              hasHoverDevice &&
+              isTabAreaHovered && (
+                <motion.div
                   className={cn(
-                    "rounded-full hover:bg-transparent cursor-pointer",
-                    isSm ? "h-6 w-6 size-6" : "h-8 w-8 size-8",
+                    "absolute top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/80 p-0 shadow-md backdrop-blur-sm origin-left",
+                    isSm ? "left-0.5 h-6 w-6" : "left-1 h-8 w-8",
                   )}
-                  onClick={() => scrollByDir("left")}
-                  aria-label="向左滚动"
+                  initial={{ opacity: 0, scale: 0, x: -10 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0, x: -10 }}
+                  transition={{ duration: 0.15 }}
                 >
-                  <ChevronLeft className={isSm ? "h-3 w-3" : "h-4 w-4"} />
-                </Button>
-              </motion.div>
-            )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "rounded-full hover:bg-transparent cursor-pointer",
+                      isSm ? "h-6 w-6 size-6" : "h-8 w-8 size-8",
+                    )}
+                    onClick={() => scrollByDir("left")}
+                    aria-label="向左滚动"
+                  >
+                    <ChevronLeft className={isSm ? "h-3 w-3" : "h-4 w-4"} />
+                  </Button>
+                </motion.div>
+              )}
           </AnimatePresence>
 
           {/* 右侧按钮 */}
           <AnimatePresence>
-            {scrollButtons && !isGridAll && showRightButton && (
-              <motion.div
-                className={cn(
-                  "absolute top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/80 p-0 shadow-md backdrop-blur-sm origin-right",
-                  isSm ? "right-0.5 h-6 w-6" : "right-1 h-8 w-8",
-                )}
-                initial={{ opacity: 0, scale: 0, x: 10 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0, x: 10 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
+            {scrollButtons &&
+              !isGridAll &&
+              showRightButton &&
+              hasHoverDevice &&
+              isTabAreaHovered && (
+                <motion.div
                   className={cn(
-                    "rounded-full hover:bg-transparent cursor-pointer",
-                    isSm ? "h-6 w-6 size-6" : "h-8 w-8 size-8",
+                    "absolute top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/80 p-0 shadow-md backdrop-blur-sm origin-right",
+                    isSm ? "right-0.5 h-6 w-6" : "right-1 h-8 w-8",
                   )}
-                  onClick={() => scrollByDir("right")}
-                  aria-label="向右滚动"
+                  initial={{ opacity: 0, scale: 0, x: 10 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0, x: 10 }}
+                  transition={{ duration: 0.15 }}
                 >
-                  <ChevronRight className={isSm ? "h-3 w-3" : "h-4 w-4"} />
-                </Button>
-              </motion.div>
-            )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "rounded-full hover:bg-transparent cursor-pointer",
+                      isSm ? "h-6 w-6 size-6" : "h-8 w-8 size-8",
+                    )}
+                    onClick={() => scrollByDir("right")}
+                    aria-label="向右滚动"
+                  >
+                    <ChevronRight className={isSm ? "h-3 w-3" : "h-4 w-4"} />
+                  </Button>
+                </motion.div>
+              )}
           </AnimatePresence>
 
           {/* 固定背景层 TabsList（不滚动） */}
           <TabsList ref={tabsListRef} className={listClass}>
             {/* 仅 scroller 层滚动 */}
-            <div ref={scrollerRef} className={scrollerClass}>
+            <div
+              ref={scrollerRef}
+              className={scrollerClass}
+              style={!isGridAll ? { touchAction: "pan-x" } : undefined}
+            >
               {/* 真正承载触发器的行 */}
               <div ref={rowRef} className={rowClass}>
                 {items.map((item) => (
