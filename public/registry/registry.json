@@ -303,7 +303,8 @@
       "registryDependencies": [
         "tabs",
         "badge",
-        "button"
+        "button",
+        "@qiuye-ui/smooth-corners"
       ],
       "files": [
         {

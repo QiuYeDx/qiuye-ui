@@ -14,7 +14,6 @@ import {
 
 import {
   ClipPathTabs,
-  ClipPathTabsContent,
   type ClipPathTabsItem,
 } from "@/components/qiuye-ui/clip-path-tabs";
 import { Badge } from "@/components/ui/badge";
@@ -22,45 +21,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ViewSourceButton } from "@/components/view-source-button";
 
 const sourceCodes = {
-  default: `import { useState } from "react";
-import {
-  ClipPathTabs,
-  ClipPathTabsContent,
-} from "@/components/qiuye-ui/clip-path-tabs";
+  shapes: `import { useState } from "react";
+import { ClipPathTabs } from "@/components/qiuye-ui/clip-path-tabs";
 
 export function Demo() {
-  const [value, setValue] = useState("balance");
+  const [value, setValue] = useState("overview");
 
   return (
-    <ClipPathTabs
-      ariaLabel="账户视图"
-      value={value}
-      onValueChange={setValue}
-      items={[
-        { value: "payments", label: "支付" },
-        { value: "balance", label: "余额" },
-        { value: "customers", label: "客户" },
-        { value: "billing", label: "账单" },
-      ]}
-    >
-      <ClipPathTabsContent value="balance">余额内容</ClipPathTabsContent>
-    </ClipPathTabs>
+    <div className="grid gap-6 lg:grid-cols-2">
+      <ClipPathTabs
+        ariaLabel="Pill 形状"
+        shape="pill"
+        value={value}
+        onValueChange={setValue}
+        items={items}
+      />
+
+      <ClipPathTabs
+        ariaLabel="Rounded 形状"
+        shape="rounded"
+        cornerRadius={10}
+        smoothCorners
+        smoothCornerSmoothing={0.75}
+        value={value}
+        onValueChange={setValue}
+        items={items}
+      />
+    </div>
   );
 }`,
-  rounded: `<ClipPathTabs
-  ariaLabel="工作区视图"
-  shape="rounded"
-  cornerRadius={10}
-  smoothCorners
-  smoothCornerSmoothing={0.75}
-  transitionMode="segmented"
-  fullWidth
-  inactiveBackground="var(--muted)"
-  inactiveForeground="var(--muted-foreground)"
-  activeBackground="#2563eb"
-  activeForeground="#ffffff"
-  items={items}
-/>`,
   states: `<ClipPathTabs
   ariaLabel="设置视图"
   defaultValue="general"
@@ -102,39 +91,51 @@ const settingsItems: ClipPathTabsItem[] = [
 ];
 
 export function ClipPathTabsDemo() {
-  const [accountView, setAccountView] = useState("balance");
-  const [workspaceView, setWorkspaceView] = useState("overview");
+  const [shapeView, setShapeView] = useState("overview");
 
   return (
     <div className="space-y-8">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between gap-4">
-            <CardTitle>默认胶囊</CardTitle>
+            <CardTitle>形状对比：Pill 与 Rounded</CardTitle>
             <ViewSourceButton
-              code={sourceCodes.default}
-              title="默认胶囊 - 源码"
+              code={sourceCodes.shapes}
+              title="Pill 与 Rounded - 源码"
             />
           </div>
         </CardHeader>
         <CardContent>
-          <ClipPathTabs
-            ariaLabel="账户视图"
-            value={accountView}
-            onValueChange={setAccountView}
-            items={accountItems}
-            className="max-w-full"
-          >
-            {accountItems.map((item) => (
-              <ClipPathTabsContent
-                key={item.value}
-                value={item.value}
-                className="mt-4 rounded-md border bg-muted/25 p-4 text-sm"
-              >
-                当前视图：{item.label}
-              </ClipPathTabsContent>
-            ))}
-          </ClipPathTabs>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Pill</p>
+              <ClipPathTabs
+                ariaLabel="Pill 形状"
+                shape="pill"
+                value={shapeView}
+                onValueChange={setShapeView}
+                items={workspaceItems}
+                className="max-w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Rounded
+              </p>
+              <ClipPathTabs
+                ariaLabel="Rounded 形状"
+                shape="rounded"
+                cornerRadius={10}
+                smoothCorners
+                smoothCornerSmoothing={0.75}
+                value={shapeView}
+                onValueChange={setShapeView}
+                items={workspaceItems}
+                className="max-w-full"
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -154,36 +155,6 @@ export function ClipPathTabsDemo() {
             defaultValue="payments"
             transitionMode="segmented"
             items={accountItems}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-4">
-            <CardTitle>平滑圆角矩形与自定义配色</CardTitle>
-            <ViewSourceButton
-              code={sourceCodes.rounded}
-              title="圆角矩形 - 源码"
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ClipPathTabs
-            ariaLabel="工作区视图"
-            shape="rounded"
-            cornerRadius={10}
-            smoothCorners
-            smoothCornerSmoothing={0.75}
-            transitionMode="segmented"
-            fullWidth
-            value={workspaceView}
-            onValueChange={setWorkspaceView}
-            inactiveBackground="var(--muted)"
-            inactiveForeground="var(--muted-foreground)"
-            activeBackground="#2563eb"
-            activeForeground="#ffffff"
-            items={workspaceItems}
           />
         </CardContent>
       </Card>

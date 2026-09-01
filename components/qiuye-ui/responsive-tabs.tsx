@@ -4,6 +4,7 @@ import React, { useRef, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SmoothCorners } from "@/components/qiuye-ui/smooth-corners";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "motion/react";
@@ -338,14 +339,16 @@ const ResponsiveTabs = React.forwardRef<
     const outerRelativeClass = "relative w-full overflow-x-hidden";
     const sizeClasses = isSm
       ? {
-          listRadius: "rounded-lg",
-          triggerRadius: "rounded-md",
+          listRadiusClass: "rounded-lg",
+          listRadius: 10,
+          triggerRadius: 8,
           gutter: "p-0.5",
           gap: "gap-0.5",
         }
       : {
-          listRadius: "rounded-xl",
-          triggerRadius: "rounded-lg",
+          listRadiusClass: "rounded-xl",
+          listRadius: 14,
+          triggerRadius: 10,
           gutter: "p-1",
           gap: "gap-1",
         };
@@ -353,7 +356,6 @@ const ResponsiveTabs = React.forwardRef<
     // TabsList：固定背景层（圆角灰底通常在这里），不滚动，负责 padding（edge gutter）
     const listClass = cn(
       "h-auto w-full overflow-hidden p-0", // 关键：overflow-hidden，固定背景
-      sizeClasses.listRadius,
       listClassName,
     );
 
@@ -385,7 +387,6 @@ const ResponsiveTabs = React.forwardRef<
 
     const triggerClass = cn(
       isSm ? "px-2 py-1 text-xs" : "px-3 py-2",
-      sizeClasses.triggerRadius,
       isScrollAll && "shrink-0 min-w-fit",
       isGridAll && "shrink min-w-0 flex items-center justify-center",
       isResponsive && "min-w-max flex items-center justify-center",
@@ -433,6 +434,12 @@ const ResponsiveTabs = React.forwardRef<
                       "rounded-full hover:bg-transparent cursor-pointer",
                       isSm ? "h-6 w-6 size-6" : "h-8 w-8 size-8",
                     )}
+                    style={
+                      {
+                        borderRadius: "9999px",
+                        cornerShape: "round",
+                      } as React.CSSProperties
+                    }
                     onClick={() => scrollByDir("left")}
                     aria-label="向左滚动"
                   >
@@ -466,6 +473,12 @@ const ResponsiveTabs = React.forwardRef<
                       "rounded-full hover:bg-transparent cursor-pointer",
                       isSm ? "h-6 w-6 size-6" : "h-8 w-8 size-8",
                     )}
+                    style={
+                      {
+                        borderRadius: "9999px",
+                        cornerShape: "round",
+                      } as React.CSSProperties
+                    }
                     onClick={() => scrollByDir("right")}
                     aria-label="向右滚动"
                   >
@@ -476,100 +489,117 @@ const ResponsiveTabs = React.forwardRef<
           </AnimatePresence>
 
           {/* 固定背景层 TabsList（不滚动） */}
-          <TabsList ref={tabsListRef} className={listClass}>
-            {/* 仅 scroller 层滚动 */}
-            <div
-              ref={scrollerRef}
-              className={scrollerClass}
-              style={!isGridAll ? { touchAction: "pan-x" } : undefined}
-            >
-              {/* 真正承载触发器的行 */}
-              <div ref={rowRef} className={rowClass}>
-                {items.map((item) => (
-                  <TabsTrigger
-                    key={item.value}
-                    value={item.value}
-                    disabled={item.disabled}
-                    className={triggerClass}
-                  >
-                    {/* layoutId 动画高亮底色 */}
-                    {animatedHighlight && value === item.value && (
-                      <motion.span
-                        layoutId={`${instanceId}-tab-highlight`}
-                        className={cn(
-                          "absolute inset-0 bg-background shadow-sm dark:border dark:border-input dark:bg-input/30",
-                          sizeClasses.triggerRadius,
-                        )}
-                        transition={{
-                          type: "spring",
-                          bounce: 0.15,
-                          duration: 0.4,
-                        }}
-                      />
-                    )}
-                    <span
-                      className={cn(
-                        "flex items-center max-w-full",
-                        isSm ? "gap-1.5" : "gap-2",
-                        animatedHighlight && "relative z-[1]",
-                      )}
+          <SmoothCorners
+            asChild
+            radius={sizeClasses.listRadius}
+            smoothing={0.7}
+          >
+            <TabsList ref={tabsListRef} className={listClass}>
+              {/* 仅 scroller 层滚动 */}
+              <div
+                ref={scrollerRef}
+                className={scrollerClass}
+                style={!isGridAll ? { touchAction: "pan-x" } : undefined}
+              >
+                {/* 真正承载触发器的行 */}
+                <div ref={rowRef} className={rowClass}>
+                  {items.map((item) => (
+                    <SmoothCorners
+                      key={item.value}
+                      asChild
+                      radius={sizeClasses.triggerRadius}
+                      smoothing={0.7}
                     >
-                      {item.icon && (
-                        <span className="shrink-0">{item.icon}</span>
-                      )}
-                      <span className="truncate">{item.label}</span>
-                      {item.badge !== undefined && (
-                        <Badge
-                          variant="secondary"
-                          className={
-                            isSm
-                              ? "ml-0.5 h-3.5 min-w-[16px] px-0.5 text-[10px]"
-                              : "ml-1 h-4 min-w-[20px] px-1 text-xs"
-                          }
+                      <TabsTrigger
+                        value={item.value}
+                        disabled={item.disabled}
+                        className={triggerClass}
+                      >
+                        {/* layoutId 动画高亮底色 */}
+                        {animatedHighlight && value === item.value && (
+                          <SmoothCorners
+                            asChild
+                            radius={sizeClasses.triggerRadius}
+                            smoothing={0.7}
+                          >
+                            <motion.span
+                              layoutId={`${instanceId}-tab-highlight`}
+                              className="absolute inset-0 bg-background shadow-sm dark:border dark:border-input dark:bg-input/30"
+                              transition={{
+                                type: "spring",
+                                bounce: 0.15,
+                                duration: 0.4,
+                              }}
+                            />
+                          </SmoothCorners>
+                        )}
+                        <span
+                          className={cn(
+                            "flex items-center max-w-full",
+                            isSm ? "gap-1.5" : "gap-2",
+                            animatedHighlight && "relative z-[1]",
+                          )}
                         >
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </span>
-                  </TabsTrigger>
-                ))}
+                          {item.icon && (
+                            <span className="shrink-0">{item.icon}</span>
+                          )}
+                          <span className="truncate">{item.label}</span>
+                          {item.badge !== undefined && (
+                            <Badge
+                              variant="secondary"
+                              className={
+                                isSm
+                                  ? "ml-0.5 h-3.5 min-w-[16px] px-0.5 text-[10px]"
+                                  : "ml-1 h-4 min-w-[20px] px-1 text-xs"
+                              }
+                            >
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </span>
+                      </TabsTrigger>
+                    </SmoothCorners>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* 渐变遮罩 */}
-            <AnimatePresence>
-              {fadeMasks && (isScrollAll || isResponsive) && showLeftFade && (
-                <motion.div
-                  aria-hidden="true"
-                  className={cn(
-                    "pointer-events-none absolute left-0 top-0 bottom-0 z-[5] bg-gradient-to-r from-muted to-transparent",
-                    sizeClasses.listRadius,
+              {/* 渐变遮罩 */}
+              <AnimatePresence>
+                {fadeMasks && (isScrollAll || isResponsive) && showLeftFade && (
+                  <motion.div
+                    aria-hidden="true"
+                    className={cn(
+                      "pointer-events-none absolute left-0 top-0 bottom-0 z-[5] bg-gradient-to-r from-muted to-transparent",
+                      sizeClasses.listRadiusClass,
+                    )}
+                    style={{ width: `${fadeMaskWidth}px` }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                )}
+              </AnimatePresence>
+              <AnimatePresence>
+                {fadeMasks &&
+                  (isScrollAll || isResponsive) &&
+                  showRightFade && (
+                    <motion.div
+                      aria-hidden="true"
+                      className={cn(
+                        "pointer-events-none absolute right-0 top-0 bottom-0 z-[5] bg-gradient-to-l from-muted to-transparent",
+                        sizeClasses.listRadiusClass,
+                      )}
+                      style={{ width: `${fadeMaskWidth}px` }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    />
                   )}
-                  style={{ width: `${fadeMaskWidth}px` }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                />
-              )}
-            </AnimatePresence>
-            <AnimatePresence>
-              {fadeMasks && (isScrollAll || isResponsive) && showRightFade && (
-                <motion.div
-                  aria-hidden="true"
-                  className={cn(
-                    "pointer-events-none absolute right-0 top-0 bottom-0 z-[5] bg-gradient-to-l from-muted to-transparent",
-                    sizeClasses.listRadius,
-                  )}
-                  style={{ width: `${fadeMaskWidth}px` }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                />
-              )}
-            </AnimatePresence>
-          </TabsList>
+              </AnimatePresence>
+            </TabsList>
+          </SmoothCorners>
         </div>
 
         {children != null && <div className="mt-3">{children}</div>}

@@ -150,7 +150,7 @@ export const componentRegistry: ComponentRegistry = {
   [ComponentId.RESPONSIVE_TABS]: {
     name: "Responsive Tabs",
     description:
-      "响应式标签页组件：responsive 模式统一等宽并在空间不足时滚动，scroll 模式按内容宽度滚动，grid 模式按配置列数等分换行；支持图标、徽标与禁用状态。",
+      "响应式标签页组件：responsive 模式统一等宽并在空间不足时滚动，scroll 模式按内容宽度滚动，grid 模式按配置列数等分换行；列表、标签与动画高亮均使用 Figma/iOS 风格平滑圆角，并支持图标、徽标与禁用状态。",
     category: "选择与切换",
     dependencies: ["lucide-react", "motion"],
     files: {
@@ -263,7 +263,7 @@ export const componentRegistry: ComponentRegistry = {
         default: "default",
       },
     ],
-    version: "1.4.1",
+    version: "1.4.2",
     author: "QiuYeDx",
     tags: [
       "tabs",
@@ -276,6 +276,7 @@ export const componentRegistry: ComponentRegistry = {
       "icon",
       "shadcn",
       "animation",
+      "smooth-corners",
     ],
     cliName: "responsive-tabs",
     basicUsage: basicUsageExamples[ComponentId.RESPONSIVE_TABS],
@@ -334,7 +335,7 @@ export const componentRegistry: ComponentRegistry = {
         name: "smoothCorners",
         type: "boolean",
         description:
-          '是否为圆角矩形启用 Figma/iOS 风格平滑圆角；配合 transitionMode="segmented" 可保持完整选中轮廓',
+          "是否为圆角矩形启用 Figma/iOS 风格平滑圆角；continuous 与 segmented 两种过渡模式均支持",
         required: false,
         default: "false",
       },
@@ -454,7 +455,7 @@ export const componentRegistry: ComponentRegistry = {
         required: false,
       },
     ],
-    version: "1.2.0",
+    version: "1.2.1",
     author: "QiuYeDx",
     tags: [
       "tabs",
