@@ -695,6 +695,11 @@ function CodeBlockStyles() {
         white-space: pre;
       }
 
+      /* Prism 的 token 类型可能与全局工具类同名（如 Markdown 的 table）。 */
+      .qiuye-code-block .line-content > span {
+        display: inline;
+      }
+
       /* ============================================
          响应式优化
          ============================================ */
