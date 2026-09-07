@@ -336,13 +336,13 @@ const ResponsiveTabs = React.forwardRef<
 
     // 类名计算
     // 外层相对定位容器，仅用于放置按钮/遮罩层（不承担滚动）
-    const outerRelativeClass = "relative w-full overflow-x-hidden";
+    const outerRelativeClass = "relative w-full min-w-0";
     const sizeClasses = isSm
       ? {
           listRadiusClass: "rounded-lg",
           listRadius: 10,
           triggerRadius: 8,
-          gutter: "p-0.5",
+          gutter: "p-[3px]",
           gap: "gap-0.5",
         }
       : {
@@ -353,15 +353,15 @@ const ResponsiveTabs = React.forwardRef<
           gap: "gap-1",
         };
 
-    // TabsList：固定背景层（圆角灰底通常在这里），不滚动，负责 padding（edge gutter）
+    // 背景层保留外部阴影；只有 scroller 裁切滚动内容。
     const listClass = cn(
-      "h-auto w-full overflow-hidden p-0", // 关键：overflow-hidden，固定背景
+      "relative block h-auto w-full min-w-0 overflow-visible p-0",
       listClassName,
     );
 
     // scroller：真正滚动的层
     const scrollerClass = cn(
-      "w-full",
+      "w-full [border-radius:inherit] [corner-shape:inherit]",
       sizeClasses.gutter,
       isGridAll ? "overflow-visible" : "overflow-x-auto overflow-y-hidden",
       // 隐藏滚动条
@@ -377,7 +377,7 @@ const ResponsiveTabs = React.forwardRef<
       isGridAll
         ? cn("grid w-full", sizeClasses.gap)
         : isScrollAll
-          ? cn("inline-flex w-max whitespace-nowrap", sizeClasses.gap)
+          ? cn("flex w-max whitespace-nowrap", sizeClasses.gap)
           : cn(
               "grid w-max min-w-full grid-flow-col auto-cols-[minmax(max-content,1fr)] whitespace-nowrap",
               sizeClasses.gap,
@@ -386,7 +386,13 @@ const ResponsiveTabs = React.forwardRef<
     );
 
     const triggerClass = cn(
+      "h-auto",
       isSm ? "px-2 py-1 text-xs" : "px-3 py-2",
+      !animatedHighlight &&
+        "data-[state=active]:border-foreground/15 dark:data-[state=active]:border-input",
+      isSm &&
+        !animatedHighlight &&
+        "data-[state=active]:shadow-xs data-[state=active]:shadow-black/10 dark:data-[state=active]:shadow-black/5",
       isScrollAll && "shrink-0 min-w-fit",
       isGridAll && "shrink min-w-0 flex items-center justify-center",
       isResponsive && "min-w-max flex items-center justify-center",
@@ -396,6 +402,9 @@ const ResponsiveTabs = React.forwardRef<
         "relative data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent dark:data-[state=active]:border-transparent",
       triggerClassName,
     );
+
+    const scrollButtonClass =
+      "h-full w-full cursor-pointer border border-foreground/15 bg-background/95 p-0 shadow-xs shadow-black/10 backdrop-blur-sm hover:bg-background dark:border-input dark:bg-muted dark:shadow-black/5 dark:hover:border-foreground/20 dark:hover:bg-accent";
 
     return (
       <Tabs
@@ -410,91 +419,89 @@ const ResponsiveTabs = React.forwardRef<
           onPointerEnter={() => setIsTabAreaHovered(true)}
           onPointerLeave={() => setIsTabAreaHovered(false)}
         >
-          {/* 左侧按钮 */}
-          <AnimatePresence>
-            {scrollButtons &&
-              !isGridAll &&
-              showLeftButton &&
-              hasHoverDevice &&
-              isTabAreaHovered && (
-                <motion.div
-                  className={cn(
-                    "absolute top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/80 p-0 shadow-md backdrop-blur-sm origin-left",
-                    isSm ? "left-0.5 h-6 w-6" : "left-1 h-8 w-8",
-                  )}
-                  initial={{ opacity: 0, scale: 0, x: -10 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  exit={{ opacity: 0, scale: 0, x: -10 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      "rounded-full hover:bg-transparent cursor-pointer",
-                      isSm ? "h-6 w-6 size-6" : "h-8 w-8 size-8",
-                    )}
-                    style={
-                      {
-                        borderRadius: "9999px",
-                        cornerShape: "round",
-                      } as React.CSSProperties
-                    }
-                    onClick={() => scrollByDir("left")}
-                    aria-label="向左滚动"
-                  >
-                    <ChevronLeft className={isSm ? "h-3 w-3" : "h-4 w-4"} />
-                  </Button>
-                </motion.div>
-              )}
-          </AnimatePresence>
-
-          {/* 右侧按钮 */}
-          <AnimatePresence>
-            {scrollButtons &&
-              !isGridAll &&
-              showRightButton &&
-              hasHoverDevice &&
-              isTabAreaHovered && (
-                <motion.div
-                  className={cn(
-                    "absolute top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/80 p-0 shadow-md backdrop-blur-sm origin-right",
-                    isSm ? "right-0.5 h-6 w-6" : "right-1 h-8 w-8",
-                  )}
-                  initial={{ opacity: 0, scale: 0, x: 10 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  exit={{ opacity: 0, scale: 0, x: 10 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      "rounded-full hover:bg-transparent cursor-pointer",
-                      isSm ? "h-6 w-6 size-6" : "h-8 w-8 size-8",
-                    )}
-                    style={
-                      {
-                        borderRadius: "9999px",
-                        cornerShape: "round",
-                      } as React.CSSProperties
-                    }
-                    onClick={() => scrollByDir("right")}
-                    aria-label="向右滚动"
-                  >
-                    <ChevronRight className={isSm ? "h-3 w-3" : "h-4 w-4"} />
-                  </Button>
-                </motion.div>
-              )}
-          </AnimatePresence>
-
-          {/* 固定背景层 TabsList（不滚动） */}
+          {/* 按钮相对背景层定位，四周内缩一致且不随内容滚动。 */}
           <SmoothCorners
             asChild
             radius={sizeClasses.listRadius}
             smoothing={0.7}
           >
             <TabsList ref={tabsListRef} className={listClass}>
+              {/* 左侧按钮 */}
+              <AnimatePresence>
+                {scrollButtons &&
+                  !isGridAll &&
+                  showLeftButton &&
+                  hasHoverDevice &&
+                  isTabAreaHovered && (
+                    <motion.div
+                      className={cn(
+                        "absolute inset-y-1 left-1 z-10 flex origin-left",
+                        isSm ? "w-6" : "w-8",
+                      )}
+                      initial={{ opacity: 0, scale: 0, x: -10 }}
+                      animate={{ opacity: 1, scale: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0, x: -10 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <SmoothCorners
+                        asChild
+                        radius={isSm ? 6 : 8}
+                        smoothing={0.7}
+                      >
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={scrollButtonClass}
+                          onClick={() => scrollByDir("left")}
+                          aria-label="向左滚动"
+                          title="向左滚动"
+                        >
+                          <ChevronLeft className={isSm ? "size-3" : "size-4"} />
+                        </Button>
+                      </SmoothCorners>
+                    </motion.div>
+                  )}
+              </AnimatePresence>
+
+              {/* 右侧按钮 */}
+              <AnimatePresence>
+                {scrollButtons &&
+                  !isGridAll &&
+                  showRightButton &&
+                  hasHoverDevice &&
+                  isTabAreaHovered && (
+                    <motion.div
+                      className={cn(
+                        "absolute inset-y-1 right-1 z-10 flex origin-right",
+                        isSm ? "w-6" : "w-8",
+                      )}
+                      initial={{ opacity: 0, scale: 0, x: 10 }}
+                      animate={{ opacity: 1, scale: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0, x: 10 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <SmoothCorners
+                        asChild
+                        radius={isSm ? 6 : 8}
+                        smoothing={0.7}
+                      >
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={scrollButtonClass}
+                          onClick={() => scrollByDir("right")}
+                          aria-label="向右滚动"
+                          title="向右滚动"
+                        >
+                          <ChevronRight
+                            className={isSm ? "size-3" : "size-4"}
+                          />
+                        </Button>
+                      </SmoothCorners>
+                    </motion.div>
+                  )}
+              </AnimatePresence>
+
               {/* 仅 scroller 层滚动 */}
               <div
                 ref={scrollerRef}
@@ -524,7 +531,12 @@ const ResponsiveTabs = React.forwardRef<
                           >
                             <motion.span
                               layoutId={`${instanceId}-tab-highlight`}
-                              className="absolute inset-0 bg-background shadow-sm dark:border dark:border-input dark:bg-input/30"
+                              className={cn(
+                                "absolute inset-0 border border-foreground/15 bg-background dark:border-input dark:bg-input/30",
+                                isSm
+                                  ? "shadow-xs shadow-black/10 dark:shadow-black/5"
+                                  : "shadow-sm",
+                              )}
                               transition={{
                                 type: "spring",
                                 bounce: 0.15,
