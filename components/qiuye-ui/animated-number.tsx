@@ -11,8 +11,10 @@ import { cn } from "@/lib/utils";
 import { getNumberTokens, type NumberToken } from "@/lib/animated-number";
 
 /** AnimatedNumber 的属性；同时支持原生 span 的属性及 ref。 */
-export interface AnimatedNumberProps
-  extends Omit<React.HTMLAttributes<HTMLSpanElement>, "children"> {
+export interface AnimatedNumberProps extends Omit<
+  React.HTMLAttributes<HTMLSpanElement>,
+  "children"
+> {
   /** 要显示的数字；不在新旧值之间生成中间数值。 */
   value: number;
   /** Intl 格式化语言，显式默认值保证服务端与浏览器一致。 @default "en-US" */
@@ -32,6 +34,10 @@ export interface AnimatedNumberProps
 }
 
 const EASE = [0.22, 1, 0.36, 1] as const;
+
+// 字形随真实布局横移时保持同一个合成层，避免过渡尾段恢复为 none 后重新栅格化。
+const stableGlyphTransform = (_values: unknown, generated: string) =>
+  generated === "none" ? "translateZ(0)" : `${generated} translateZ(0)`;
 
 // 用服务端快照保持 hydration 一致，并实时响应系统偏好变化。
 function subscribeReducedMotion(notify: () => void) {
@@ -60,61 +66,80 @@ function NumberSlot({
   const [present, safeToRemove] = usePresence();
   const presenceSign: number = usePresenceData() ?? sign;
   const transition = { duration: Math.max(0, duration), ease: EASE };
-  const hiddenFilter = blur ? "blur(3px)" : "blur(0px)";
+  const hiddenBlur = blur ? "3px" : "0px";
+  const filter = blur ? "blur(var(--number-blur, 0px))" : "none";
   return (
     <motion.span
       data-number-slot={token.key}
-      initial={{
-        width: 0,
-        opacity: 0,
-        y: sign * 35 + "%",
-        filter: hiddenFilter,
-      }}
-      animate={{
-        width: present ? (width ?? "auto") : 0,
-        opacity: present ? 1 : 0,
-        y: present ? "0%" : presenceSign * -35 + "%",
-        filter: present ? "blur(0px)" : hiddenFilter,
-      }}
+      initial={{ width: 0 }}
+      animate={{ width: present ? (width ?? "auto") : 0 }}
       onAnimationComplete={() => {
         if (!present) safeToRemove?.();
       }}
       transition={transition}
       style={{ position: "relative", display: "inline-block", flexShrink: 0 }}
     >
-      <span style={{ visibility: "hidden" }}>{token.text}</span>
-      <AnimatePresence initial={false} custom={sign}>
-        <motion.span
-          key={token.text}
-          data-number-glyph={token.text}
-          custom={sign}
-          variants={{
-            enter: (d: number) => ({
-              y: d * 35 + "%",
-              opacity: 0,
-              filter: hiddenFilter,
-            }),
-            visible: { y: "0%", opacity: 1, filter: "blur(0px)" },
-            leave: (d: number) => ({
-              y: d * -35 + "%",
-              opacity: 0,
-              filter: hiddenFilter,
-            }),
-          }}
-          initial="enter"
-          animate="visible"
-          exit="leave"
-          transition={transition}
-          style={{
-            position: "absolute",
-            insetInlineStart: 0,
-            top: 0,
-            whiteSpace: "nowrap",
-          }}
-        >
-          {token.text}
-        </motion.span>
-      </AnimatePresence>
+      {/* 占位层只改宽度；字形在固有宽度层上绘制，避免缩窄的合成层反复栅格化。 */}
+      <motion.span
+        data-number-face=""
+        transformTemplate={stableGlyphTransform}
+        initial={{
+          opacity: 0,
+          y: sign * 35 + "%",
+          "--number-blur": hiddenBlur,
+        }}
+        animate={{
+          opacity: present ? 1 : 0,
+          y: present ? "0%" : presenceSign * -35 + "%",
+          "--number-blur": present ? "0px" : hiddenBlur,
+        }}
+        transition={transition}
+        style={{
+          position: "relative",
+          display: "block",
+          width: "max-content",
+          filter,
+          willChange: "transform",
+        }}
+      >
+        <span style={{ visibility: "hidden" }}>{token.text}</span>
+        <AnimatePresence initial={false} custom={sign}>
+          <motion.span
+            key={token.text}
+            data-number-glyph={token.text}
+            transformTemplate={stableGlyphTransform}
+            custom={sign}
+            variants={{
+              enter: (d: number) => ({
+                y: d * 35 + "%",
+                opacity: 0,
+                "--number-blur": hiddenBlur,
+              }),
+              visible: { y: "0%", opacity: 1, "--number-blur": "0px" },
+              leave: (d: number) => ({
+                y: d * -35 + "%",
+                opacity: 0,
+                "--number-blur": hiddenBlur,
+              }),
+            }}
+            initial="enter"
+            animate="visible"
+            exit="leave"
+            transition={transition}
+            style={{
+              position: "absolute",
+              insetInlineStart: 0,
+              top: 0,
+              whiteSpace: "nowrap",
+              width: "max-content",
+              filter,
+              willChange: "transform",
+            }}
+          >
+            {token.text}
+          </motion.span>
+        </AnimatePresence>
+      </motion.span>
     </motion.span>
   );
 }
