@@ -147,6 +147,79 @@ const matrixEffectRuntimeProps: PropDefinition[] = [
 
 // 组件注册表
 export const componentRegistry: ComponentRegistry = {
+  [ComponentId.ANIMATED_NUMBER]: {
+    name: "AnimatedNumber",
+    description:
+      "按数位独立过渡的动态数字，支持可选模糊、平滑宽度变化和 Intl 格式化。",
+    category: "视觉与动效",
+    dependencies: ["motion"],
+    files: {
+      component: "components/qiuye-ui/animated-number.tsx",
+      demo: "components/qiuye-ui/demos/animated-number-demo.tsx",
+    },
+    props: [
+      {
+        name: "value",
+        type: "number",
+        description: "当前数值；只动画发生变化的数位，不生成中间数值。",
+        required: true,
+      },
+      {
+        name: "locales",
+        type: "string",
+        description: "Intl 格式化语言；SSR 与客户端需保持一致。",
+        default: '"en-US"',
+        required: false,
+      },
+      {
+        name: "format",
+        type: "Intl.NumberFormatOptions",
+        description: "小数精度、整数补零、千分位、货币等格式选项。",
+        default: "{ useGrouping: false }",
+        required: false,
+      },
+      {
+        name: "blur",
+        type: "boolean",
+        description: "为变化字形添加 3px 模糊过渡，静止字形保持清晰。",
+        default: "true",
+        required: false,
+      },
+      {
+        name: "duration",
+        type: "number",
+        description: "过渡秒数；设置为 0 立即更新。",
+        default: "0.28",
+        required: false,
+      },
+      {
+        name: "direction",
+        type: '"auto" | "up" | "down"',
+        description:
+          "auto 根据数值增减决定方向；年月可由完整日期统一指定方向。",
+        default: '"auto"',
+        required: false,
+      },
+      {
+        name: "animated",
+        type: "boolean",
+        description: "启用动画；系统减少动态效果偏好始终优先。",
+        default: "true",
+        required: false,
+      },
+      {
+        name: "className",
+        type: "string",
+        description: "容器类名；继承字号、行高和主题颜色。",
+        required: false,
+      },
+    ],
+    version: "1.0.0",
+    author: "QiuYeDx",
+    tags: ["数字", "逐位", "动效", "计数", "金额", "年月", "blur"],
+    cliName: "animated-number",
+    basicUsage: basicUsageExamples[ComponentId.ANIMATED_NUMBER],
+  },
   [ComponentId.RESPONSIVE_TABS]: {
     name: "Responsive Tabs",
     description:

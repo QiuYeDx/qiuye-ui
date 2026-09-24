@@ -56,6 +56,7 @@ pnpm dlx shadcn@latest add https://ui.qiuyedx.com/registry/responsive-tabs.json
 
 | 组件                                                                                 | Registry 名称             | 说明                                                                                   |
 | ------------------------------------------------------------------------------------ | ------------------------- | -------------------------------------------------------------------------------------- |
+| [AnimatedNumber](https://ui.qiuyedx.com/components/animated-number) | `animated-number` | 逐位数字过渡，可选模糊、平滑宽度和 Intl 格式化。 |
 | [Clip Path Tabs](https://ui.qiuyedx.com/components/clip-path-tabs)                   | `clip-path-tabs`          | 使用 `clip-path` 完成背景与文字颜色过渡的标签组，支持连续和分段布局。                  |
 | [Code Block](https://ui.qiuyedx.com/components/code-block)                           | `code-block`              | 代码块与文件面板，支持主题、行号、Diff、行高亮、折叠和复制。                           |
 | [Color Picker](https://ui.qiuyedx.com/components/color-picker)                       | `color-picker`            | HSV 取色器，支持 Alpha、触控、预设色、最近颜色和 Popover / Inline 模式。               |

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { AnimatedNumberPreview } from "@/components/qiuye-ui/demos/animated-number-demo";
 import {
   ArrowUpRightIcon,
   BellOffIcon,
@@ -1478,6 +1479,7 @@ function SmoothCornersPreview() {
 export const homePreviewComponents: Partial<
   Record<ComponentId, React.ComponentType>
 > = {
+  [ComponentId.ANIMATED_NUMBER]: AnimatedNumberPreview,
   [ComponentId.MATRIX_EFFECT]: MatrixEffectPreview,
   [ComponentId.RESPONSIVE_TABS]: ResponsiveTabsPreview,
   [ComponentId.CLIP_PATH_TABS]: ClipPathTabsPreview,

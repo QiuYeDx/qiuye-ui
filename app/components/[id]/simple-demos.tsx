@@ -609,3 +609,5 @@ export function MatrixEffectSimpleDemo() {
     />
   );
 }
+
+export { AnimatedNumberPreview as AnimatedNumberSimpleDemo } from "@/components/qiuye-ui/demos/animated-number-demo";

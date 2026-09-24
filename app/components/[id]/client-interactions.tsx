@@ -52,7 +52,7 @@ function usePackageManager() {
   const packageManager = useSyncExternalStore(
     subscribe,
     getSnapshot,
-    getServerSnapshot
+    getServerSnapshot,
   );
 
   const setPackageManager = useCallback((pm: PackageManager) => {
@@ -122,13 +122,14 @@ export function CopyCommandButton({ cliName }: CopyCommandButtonProps) {
   return (
     <div className="space-y-3">
       <PackageManagerSelector />
-      <SidebarCodeBlock
-        code={generateCommand()}
-        language="shell"
-      />
+      <SidebarCodeBlock code={generateCommand()} language="shell" />
     </div>
   );
 }
+
+const subscribeHydration = () => () => {};
+const getClientHydration = () => true;
+const getServerHydration = () => false;
 
 interface SidebarCodeBlockProps {
   code: string;
@@ -141,7 +142,12 @@ export function SidebarCodeBlock({
   language = "tsx",
 }: SidebarCodeBlockProps) {
   const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
+  const hydrated = useSyncExternalStore(
+    subscribeHydration,
+    getClientHydration,
+    getServerHydration,
+  );
+  const isDark = hydrated && resolvedTheme === "dark";
 
   return (
     <CodeBlockPanel
@@ -317,7 +323,12 @@ export function BasicUsageBlock({
   usageCode,
 }: BasicUsageBlockProps) {
   const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
+  const hydrated = useSyncExternalStore(
+    subscribeHydration,
+    getClientHydration,
+    getServerHydration,
+  );
+  const isDark = hydrated && resolvedTheme === "dark";
 
   return (
     <section className="space-y-3">

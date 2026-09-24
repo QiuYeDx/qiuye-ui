@@ -4,6 +4,27 @@
   "homepage": "https://ui.qiuyedx.com",
   "items": [
     {
+      "name": "animated-number",
+      "type": "registry:component",
+      "title": "AnimatedNumber",
+      "author": "QiuYeDx <me@qiuyedx.com>",
+      "dependencies": [
+        "motion"
+      ],
+      "registryDependencies": [],
+      "files": [
+        {
+          "type": "registry:component",
+          "path": "components/qiuye-ui/animated-number.tsx"
+        },
+        {
+          "type": "registry:lib",
+          "path": "lib/animated-number.ts"
+        }
+      ],
+      "description": "按数位独立过渡的动态数字，支持可选模糊、平滑宽度变化和 Intl 格式化。"
+    },
+    {
       "name": "clip-path-tabs",
       "type": "registry:component",
       "title": "ClipPathTabs",

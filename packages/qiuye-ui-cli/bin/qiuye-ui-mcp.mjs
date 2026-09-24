@@ -21,6 +21,7 @@ const DEFAULT_COMPONENT_NAMES = [
   "theme-transition-toggle",
   "code-block",
   "typewriter",
+  "animated-number",
   "markdown-renderer",
   "color-picker",
   "smooth-corners",

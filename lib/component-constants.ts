@@ -6,6 +6,7 @@
 // 组件 ID 枚举
 // TODO: 新增自定义组件时需要更新这里
 export enum ComponentId {
+  ANIMATED_NUMBER = "animated-number",
   RESPONSIVE_TABS = "responsive-tabs",
   CLIP_PATH_TABS = "clip-path-tabs",
   SEGMENTED_CONTROL = "segmented-control",
@@ -36,6 +37,10 @@ export type BasicUsageExamples = Record<ComponentId, BasicUsageExample>;
 
 // 基础使用示例数据
 export const basicUsageExamples: BasicUsageExamples = {
+  [ComponentId.ANIMATED_NUMBER]: {
+    import: `import { AnimatedNumber } from "@/components/qiuye-ui/animated-number";\nimport { useState } from "react";`,
+    usage: `const [count, setCount] = useState(99);\n\nreturn (\n  <div className="flex items-baseline gap-2">\n    <AnimatedNumber value={count} className="text-4xl" />\n    <span>次</span>\n    <button onClick={() => setCount(value => value + 1)}>增加</button>\n  </div>\n);`,
+  },
   [ComponentId.RESPONSIVE_TABS]: {
     import: `import { ResponsiveTabs } from "@/components/qiuye-ui/responsive-tabs";
 import { useState } from "react";`,
