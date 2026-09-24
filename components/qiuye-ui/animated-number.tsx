@@ -49,6 +49,86 @@ const getReducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const getServerReducedMotion = () => false;
 
+// 同一个字符再次出现也是新的一次入场；每个退出副本独立回收，不等整组动画空闲。
+function NumberGlyphs({
+  text,
+  sign,
+  blur,
+  duration,
+}: {
+  text: string;
+  sign: number;
+  blur: boolean;
+  duration: number;
+}) {
+  const [frames, setFrames] = React.useState({
+    revision: 0,
+    text,
+    items: [{ id: 0, text, enterSign: sign, exitSign: sign }],
+  });
+  if (frames.text !== text) {
+    const revision = frames.revision + 1;
+    setFrames({
+      revision,
+      text,
+      items: [
+        ...frames.items.map((frame) =>
+          frame.id === frames.revision ? { ...frame, exitSign: sign } : frame,
+        ),
+        { id: revision, text, enterSign: sign, exitSign: sign },
+      ],
+    });
+  }
+  const hiddenBlur = blur ? "3px" : "0px";
+  return frames.items.map((frame) => {
+    const active = frame.id === frames.revision;
+    return (
+      <motion.span
+        key={frame.id}
+        data-number-glyph={frame.text}
+        data-number-generation={frame.id}
+        data-number-active={active ? "true" : "false"}
+        transformTemplate={stableGlyphTransform}
+        initial={
+          frame.id === 0
+            ? false
+            : {
+                y: frame.enterSign * 35 + "%",
+                opacity: 0,
+                "--number-blur": hiddenBlur,
+              }
+        }
+        animate={{
+          y: active ? "0%" : frame.exitSign * -35 + "%",
+          opacity: active ? 1 : 0,
+          "--number-blur": active ? "0px" : hiddenBlur,
+        }}
+        transition={{ duration: Math.max(0, duration), ease: EASE }}
+        onAnimationComplete={() => {
+          if (active) return;
+          setFrames((current) => ({
+            ...current,
+            items: current.items.filter(
+              (item) => item.id !== frame.id || item.id === current.revision,
+            ),
+          }));
+        }}
+        style={{
+          position: "absolute",
+          insetInlineStart: 0,
+          top: 0,
+          whiteSpace: "nowrap",
+          width: "max-content",
+          filter: blur ? "blur(var(--number-blur, 0px))" : "none",
+          willChange: "transform",
+        }}
+      >
+        {frame.text}
+      </motion.span>
+    );
+  });
+}
+
 // 数位的真实占位独立管理退出，避免中途反向使嵌套 exit Promise 悬空。
 function NumberSlot({
   token,
@@ -103,41 +183,14 @@ function NumberSlot({
         }}
       >
         <span style={{ visibility: "hidden" }}>{token.text}</span>
-        <AnimatePresence initial={false} custom={sign}>
-          <motion.span
-            key={token.text}
-            data-number-glyph={token.text}
-            transformTemplate={stableGlyphTransform}
-            custom={sign}
-            variants={{
-              enter: (d: number) => ({
-                y: d * 35 + "%",
-                opacity: 0,
-                "--number-blur": hiddenBlur,
-              }),
-              visible: { y: "0%", opacity: 1, "--number-blur": "0px" },
-              leave: (d: number) => ({
-                y: d * -35 + "%",
-                opacity: 0,
-                "--number-blur": hiddenBlur,
-              }),
-            }}
-            initial="enter"
-            animate="visible"
-            exit="leave"
-            transition={transition}
-            style={{
-              position: "absolute",
-              insetInlineStart: 0,
-              top: 0,
-              whiteSpace: "nowrap",
-              width: "max-content",
-              filter,
-              willChange: "transform",
-            }}
-          >
-            {token.text}
-          </motion.span>
+        {/* 独立 initial 边界：槽位首屏不入场，但之后新增的字形仍要执行 initial。 */}
+        <AnimatePresence initial={true}>
+          <NumberGlyphs
+            text={token.text}
+            sign={sign}
+            blur={blur}
+            duration={duration}
+          />
         </AnimatePresence>
       </motion.span>
     </motion.span>

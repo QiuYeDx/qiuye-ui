@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Minus, Plus } from "lucide-react";
 import { AnimatedNumber } from "@/components/qiuye-ui/animated-number";
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,23 @@ export function AnimatedNumberDemo() {
   const [duration, setDuration] = useState(0.28);
   const [count, setCount] = useState(99);
   const [amount, setAmount] = useState(999.9);
+  const [stream, setStream] = useState({ value: 0, remaining: 0, step: 1 });
+  const streaming = stream.remaining > 0;
+  useEffect(() => {
+    if (!streaming) return;
+    const timer = window.setInterval(() => {
+      setStream((current) =>
+        current.remaining === 0
+          ? current
+          : {
+              ...current,
+              value: current.value + current.step,
+              remaining: current.remaining - 1,
+            },
+      );
+    }, 40);
+    return () => window.clearInterval(timer);
+  }, [streaming]);
   function changeDate(next: number) {
     setDirection(next >= date ? "up" : "down");
     setDate(next);
@@ -255,6 +272,41 @@ export function AnimatedNumberDemo() {
           </CardContent>
         </Card>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>连续更新</CardTitle>
+          <CardDescription>
+            每 40ms 更新一次，连续 120
+            次；观察同一数字再次出现时的入场方向，以及停止后的归位。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center justify-between gap-6">
+          <div data-demo-stream="" className="text-5xl font-medium">
+            <AnimatedNumber value={stream.value} {...motionProps} />
+          </div>
+          <Button
+            variant="outline"
+            onClick={() =>
+              setStream((current) => ({
+                ...current,
+                remaining: current.remaining ? 0 : 120,
+                step: 1,
+              }))
+            }
+          >
+            {stream.remaining ? "停止连续更新" : "开始连续更新"}
+          </Button>
+          <Button
+            variant="outline"
+            disabled={streaming}
+            onClick={() =>
+              setStream((current) => ({ ...current, remaining: 120, step: -1 }))
+            }
+          >
+            连续递减
+          </Button>
+        </CardContent>
+      </Card>
       <p className="text-sm leading-relaxed text-muted-foreground">
         组件继承字号和颜色；模糊仅作用于变化的字形。系统开启“减少动态效果”时会立即显示当前数值。用于滚动进度时，建议在业务层按可见精度更新。
       </p>
