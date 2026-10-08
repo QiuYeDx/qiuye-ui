@@ -27,6 +27,7 @@ const DEFAULT_COMPONENT_NAMES = [
   "smooth-corners",
   "tour",
   "matrix-effect",
+  "expandable-card",
 ];
 
 function parseArgs(argv) {

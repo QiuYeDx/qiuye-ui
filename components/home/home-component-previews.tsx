@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { AnimatedNumberPreview } from "@/components/qiuye-ui/demos/animated-number-demo";
+import { ExpandableCardPreview } from "@/components/qiuye-ui/demos/expandable-card-demo";
 import {
   ArrowUpRightIcon,
   BellOffIcon,
@@ -1480,6 +1481,7 @@ export const homePreviewComponents: Partial<
   Record<ComponentId, React.ComponentType>
 > = {
   [ComponentId.ANIMATED_NUMBER]: AnimatedNumberPreview,
+  [ComponentId.EXPANDABLE_CARD]: ExpandableCardPreview,
   [ComponentId.MATRIX_EFFECT]: MatrixEffectPreview,
   [ComponentId.RESPONSIVE_TABS]: ResponsiveTabsPreview,
   [ComponentId.CLIP_PATH_TABS]: ClipPathTabsPreview,

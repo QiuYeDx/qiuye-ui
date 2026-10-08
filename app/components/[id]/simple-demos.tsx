@@ -611,3 +611,4 @@ export function MatrixEffectSimpleDemo() {
 }
 
 export { AnimatedNumberPreview as AnimatedNumberSimpleDemo } from "@/components/qiuye-ui/demos/animated-number-demo";
+export { ExpandableCardPreview as ExpandableCardSimpleDemo } from "@/components/qiuye-ui/demos/expandable-card-demo";

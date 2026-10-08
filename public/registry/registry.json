@@ -127,6 +127,28 @@
       ]
     },
     {
+      "name": "expandable-card",
+      "type": "registry:component",
+      "title": "ExpandableCard",
+      "author": "QiuYeDx <me@qiuyedx.com>",
+      "dependencies": [
+        "motion",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-scroll-area",
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "@qiuye-ui/smooth-corners"
+      ],
+      "files": [
+        {
+          "type": "registry:component",
+          "path": "components/qiuye-ui/expandable-card.tsx"
+        }
+      ],
+      "description": "App Store 风格的展开卡片：从原位置连续放大为居中详情浮层，支持分层视差封面、无重排滚动与无缝阴影交接。"
+    },
+    {
       "name": "image-viewer",
       "type": "registry:component",
       "title": "ImageViewer",

@@ -28,6 +28,7 @@
 - `smooth-corners`
 - `tour`
 - `matrix-effect`
+- `expandable-card`
 
 ## 核心目录
 

@@ -22,6 +22,7 @@ export enum ComponentId {
   SMOOTH_CORNERS = "smooth-corners",
   TOUR = "tour",
   MATRIX_EFFECT = "matrix-effect",
+  EXPANDABLE_CARD = "expandable-card",
 }
 
 // 组件 ID 数组，方便遍历
@@ -37,6 +38,22 @@ export type BasicUsageExamples = Record<ComponentId, BasicUsageExample>;
 
 // 基础使用示例数据
 export const basicUsageExamples: BasicUsageExamples = {
+  [ComponentId.EXPANDABLE_CARD]: {
+    import: `import { ExpandableCard } from "@/components/qiuye-ui/expandable-card";
+import { Button } from "@/components/ui/button";`,
+    usage: `<ExpandableCard
+  className="h-[30rem]"
+  cover={<div className="absolute inset-0 bg-gradient-to-br from-indigo-900 to-fuchsia-800" />}
+  eyebrow="桌面应用"
+  title={"后台在播放，\\n字幕留在游戏画面上"}
+  icon={<img src="/icon.png" alt="" />}
+  name="PotSubOverlay"
+  subtitle="透明 · 置顶 · 鼠标穿透"
+  actions={<Button size="sm" className="rounded-full">下载</Button>}
+>
+  <p>展开后的详细介绍……</p>
+</ExpandableCard>`,
+  },
   [ComponentId.ANIMATED_NUMBER]: {
     import: `import { AnimatedNumber } from "@/components/qiuye-ui/animated-number";\nimport { useState } from "react";`,
     usage: `const [count, setCount] = useState(99);\n\nreturn (\n  <div className="flex items-baseline gap-2">\n    <AnimatedNumber value={count} className="text-4xl" />\n    <span>次</span>\n    <button onClick={() => setCount(value => value + 1)}>增加</button>\n  </div>\n);`,

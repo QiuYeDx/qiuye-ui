@@ -35,6 +35,7 @@ export async function generateStaticParams() {
 }
 
 import { AnimatedNumberDemo } from "@/components/qiuye-ui/demos/animated-number-demo";
+import { ExpandableCardDemo } from "@/components/qiuye-ui/demos/expandable-card-demo";
 
 // 导入演示组件
 import { ResponsiveTabsDemo } from "@/components/qiuye-ui/demos/responsive-tabs-demo";
@@ -55,6 +56,7 @@ import { MatrixEffectDemo } from "@/components/qiuye-ui/demos/matrix-effect-demo
 
 // TODO: 新增 qiuye-ui 自定义组件时需要完善 demo 文件
 const demoComponents = {
+  [ComponentId.EXPANDABLE_CARD]: ExpandableCardDemo,
   [ComponentId.ANIMATED_NUMBER]: AnimatedNumberDemo,
   [ComponentId.RESPONSIVE_TABS]: ResponsiveTabsDemo,
   [ComponentId.CLIP_PATH_TABS]: ClipPathTabsDemo,
@@ -76,6 +78,7 @@ const demoComponents = {
 // 导入简单演示组件
 import {
   AnimatedNumberSimpleDemo,
+  ExpandableCardSimpleDemo,
   ResponsiveTabsSimpleDemo,
   ClipPathTabsSimpleDemo,
   SegmentedControlSimpleDemo,
@@ -95,6 +98,7 @@ import {
 
 // 精简的单例演示组件
 const simpleDemoComponents = {
+  [ComponentId.EXPANDABLE_CARD]: ExpandableCardSimpleDemo,
   [ComponentId.ANIMATED_NUMBER]: AnimatedNumberSimpleDemo,
   [ComponentId.RESPONSIVE_TABS]: ResponsiveTabsSimpleDemo,
   [ComponentId.CLIP_PATH_TABS]: ClipPathTabsSimpleDemo,

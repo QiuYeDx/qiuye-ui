@@ -10,6 +10,7 @@ export interface HomePreviewConfig {
 
 export const homePreviewConfigs: HomePreviewConfig[] = [
   { id: ComponentId.ANIMATED_NUMBER, size: "compact", featured: true },
+  { id: ComponentId.EXPANDABLE_CARD, size: "tall", featured: true },
   {
     id: ComponentId.MATRIX_EFFECT,
     size: "wide",

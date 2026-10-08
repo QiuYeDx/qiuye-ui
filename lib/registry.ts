@@ -147,6 +147,228 @@ const matrixEffectRuntimeProps: PropDefinition[] = [
 
 // 组件注册表
 export const componentRegistry: ComponentRegistry = {
+  [ComponentId.EXPANDABLE_CARD]: {
+    name: "ExpandableCard",
+    description:
+      "App Store 风格的展开卡片：从原位置连续放大为居中详情浮层，支持分层视差封面、无重排滚动与无缝阴影交接。",
+    category: "内容与媒体",
+    dependencies: [
+      "motion",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-scroll-area",
+      "lucide-react",
+    ],
+    files: {
+      component: "components/qiuye-ui/expandable-card.tsx",
+      demo: "components/qiuye-ui/demos/expandable-card-demo.tsx",
+    },
+    propsInfo: [
+      {
+        componentName: "ExpandableCard",
+        props: [
+          {
+            name: "cover",
+            type: "ReactNode",
+            description: "卡片与浮层共用的封面；会渲染两次，应保持确定性。封面容器为 size 查询容器，可使用 cqw / cqh。",
+            required: true,
+          },
+          {
+            name: "eyebrow",
+            type: "ReactNode",
+            description: "封面左上角的小标签，如分类。",
+            required: false,
+          },
+          {
+            name: "title",
+            type: "ReactNode",
+            description: "封面上的大标题；字符串中的 \\n 作为换行，卡片与浮层断行一致。",
+            required: false,
+          },
+          {
+            name: "tone",
+            type: "\"light\" | \"dark\"",
+            description: "封面文字配色：light 适合深色封面，dark 适合浅色封面。",
+            default: "\"light\"",
+            required: false,
+          },
+          {
+            name: "icon",
+            type: "ReactNode",
+            description: "底栏图标；<img> 或 <svg> 自动铺满 52px 平滑圆角容器。",
+            required: false,
+          },
+          {
+            name: "name",
+            type: "ReactNode",
+            description: "底栏名称。",
+            required: false,
+          },
+          {
+            name: "subtitle",
+            type: "ReactNode",
+            description: "底栏副标题，单行截断。",
+            required: false,
+          },
+          {
+            name: "actionLabel",
+            type: "ReactNode",
+            description: "卡片态底栏右侧的胶囊文字；传入 null 隐藏。",
+            default: "\"查看\"",
+            required: false,
+          },
+          {
+            name: "actions",
+            type: "ReactNode",
+            description: "展开后替换胶囊的操作区，如下载、访问官网按钮。",
+            required: false,
+          },
+          {
+            name: "children",
+            type: "ReactNode",
+            description: "展开后显示在底栏下方的正文。",
+            required: false,
+          },
+          {
+            name: "label",
+            type: "string",
+            description: "卡片按钮与对话框的无障碍名称；默认取 name 或 title 中的文字。",
+            required: false,
+          },
+          {
+            name: "open",
+            type: "boolean",
+            description: "受控模式下的展开状态。",
+            required: false,
+          },
+          {
+            name: "defaultOpen",
+            type: "boolean",
+            description: "非受控模式的初始状态；为 true 时挂载后从卡片位置展开。",
+            default: "false",
+            required: false,
+          },
+          {
+            name: "onOpenChange",
+            type: "(open: boolean) => void",
+            description: "点击卡片、Esc、遮罩或关闭按钮时触发。",
+            required: false,
+          },
+          {
+            name: "parallax",
+            type: "boolean",
+            description: "卡片内的指针视差与高光；触屏与减少动态效果时自动停用。",
+            default: "true",
+            required: false,
+          },
+          {
+            name: "maxWidth",
+            type: "number",
+            description: "浮层最大宽度（px）；视口小于 640px 时四边各留 8px。",
+            default: "760",
+            required: false,
+          },
+          {
+            name: "expandedCoverHeight",
+            type: "number | ((viewportHeight: number) => number)",
+            description: "浮层中的封面高度（px），或根据视口高度计算。",
+            default: "clamp(240, 42vh, 400)",
+            required: false,
+          },
+          {
+            name: "radius",
+            type: "number",
+            description: "卡片与浮层的平滑圆角半径（px）。",
+            default: "28",
+            required: false,
+          },
+          {
+            name: "closeLabel",
+            type: "string",
+            description: "关闭按钮的无障碍名称。",
+            default: "\"关闭\"",
+            required: false,
+          },
+          {
+            name: "className",
+            type: "string",
+            description: "卡片类名；卡片高度由调用方决定。",
+            default: "\"h-[28rem]\"",
+            required: false,
+          },
+          {
+            name: "sheetClassName",
+            type: "string",
+            description: "浮层类名。",
+            required: false,
+          },
+          {
+            name: "contentClassName",
+            type: "string",
+            description: "正文容器类名。",
+            required: false,
+          },
+        ],
+      },
+      {
+        componentName: "ExpandableCardLayer",
+        props: [
+          {
+            name: "depth",
+            type: "number",
+            description: "指针位于卡片边缘时的最大横向位移（px），纵向为 0.7 倍；负值反向移动。",
+            default: "8",
+            required: false,
+          },
+          {
+            name: "className",
+            type: "string",
+            description: "定位、尺寸与外观；铺满封面的背景层建议使用负 inset 预留出血。",
+            required: false,
+          },
+          {
+            name: "style",
+            type: "CSSProperties",
+            description: "图层样式；transform 由组件接管。",
+            required: false,
+          },
+          {
+            name: "children",
+            type: "ReactNode",
+            description: "图层内容。",
+            required: false,
+          },
+        ],
+      },
+      {
+        componentName: "useExpandableCard（返回值）",
+        props: [
+          {
+            name: "x / y",
+            type: "MotionValue<number>",
+            description: "指针位置，归一化到 -1…1；浮层中恒为 0。",
+            required: true,
+          },
+          {
+            name: "live",
+            type: "boolean",
+            description: "封面是否应运行循环动画：可见、未被浮层占用且允许动态效果。",
+            required: true,
+          },
+          {
+            name: "expanded",
+            type: "boolean",
+            description: "当前渲染位置是否为展开中的浮层。",
+            required: true,
+          },
+        ],
+      },
+    ],
+    version: "1.0.0",
+    author: "QiuYeDx",
+    tags: ["卡片", "App Store", "展开", "容器变形", "浮层", "视差", "详情"],
+    cliName: "expandable-card",
+    basicUsage: basicUsageExamples[ComponentId.EXPANDABLE_CARD],
+  },
   [ComponentId.ANIMATED_NUMBER]: {
     name: "AnimatedNumber",
     description:
