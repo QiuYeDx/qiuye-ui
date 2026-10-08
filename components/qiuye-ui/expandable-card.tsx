@@ -31,9 +31,9 @@ const REST_SHADOW =
   "0 4px 20px -12px color-mix(in oklab, var(--foreground) 14%, transparent)";
 const HOVER_SHADOW =
   "0 24px 48px -28px color-mix(in oklab, var(--foreground) 32%, transparent)";
-// 深阴影强度由 --ec-lift（0–1）控制，随飞行增强、落地前归零。
-const SHEET_SHADOW =
-  "var(--ec-rest-shadow), 0 40px 100px -40px rgb(0 0 0 / calc(0.5 * var(--ec-lift)))";
+// 浮层的深阴影放在独立图层上，只动画该层的 opacity：
+// 不逐帧改写阴影颜色，也不改写会被整棵子树继承的自定义属性。
+const LIFT_SHADOW = "0 40px 100px -40px rgb(0 0 0 / 0.5)";
 
 type Phase = "closed" | "opening" | "open" | "closing";
 interface Rect {
@@ -53,7 +53,7 @@ export interface ExpandableCardState {
   x: MotionValue<number>;
   /** 指针纵向位置，归一化到 -1…1 */
   y: MotionValue<number>;
-  /** 封面是否应运行循环动画：可见、未被浮层占用且允许动态效果 */
+  /** 封面是否应运行循环动画：可见、未被浮层占用、不在展开/收起过程中且允许动态效果 */
   live: boolean;
   /** 当前渲染位置是否为展开中的浮层 */
   expanded: boolean;
@@ -498,6 +498,7 @@ export function ExpandableCard({
 }: ExpandableCardProps) {
   const reduceMotion = useReducedMotion() ?? false;
   const cardRef = React.useRef<HTMLButtonElement>(null);
+  const panelRef = React.useRef<HTMLDivElement>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
@@ -544,6 +545,14 @@ export function ExpandableCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestedOpen]);
 
+  // 正文按落点宽度排版，需扣除面板左右边框（可能被 sheetClassName 改写）。
+  const [frameX, setFrameX] = React.useState(2);
+  const mounted = phase !== "closed";
+  React.useLayoutEffect(() => {
+    const panel = panelRef.current;
+    if (panel) setFrameX(panel.offsetWidth - panel.clientWidth);
+  }, [mounted]);
+
   React.useEffect(() => {
     if (phase === "closed") return;
     const onResize = () =>
@@ -586,7 +595,8 @@ export function ExpandableCard({
   const sheetState: ExpandableCardState = {
     x: STILL,
     y: STILL,
-    live: !reduceMotion,
+    // 飞行中封面逐帧变化尺寸，循环动画等落地后再运行。
+    live: !reduceMotion && phase === "open",
     expanded: true,
   };
 
@@ -695,153 +705,166 @@ export function ExpandableCard({
                 cardRef.current?.focus({ preventScroll: true });
               }}
             >
-              <SmoothCorners asChild radius={radius} smoothing={0.6}>
-                <motion.div
-                  data-expandable-card-sheet=""
-                  data-phase={phase}
-                  tabIndex={-1}
-                  className={cn(
-                    "fixed z-50 overflow-hidden border bg-card text-card-foreground outline-none",
-                    sheetClassName,
-                  )}
-                  style={
-                    {
-                      "--ec-rest-shadow": REST_SHADOW,
-                      boxShadow: SHEET_SHADOW,
-                    } as React.CSSProperties
-                  }
-                  initial={
-                    reduceMotion
-                      ? { ...target, opacity: 0, "--ec-lift": 1 }
-                      : { ...origin.rect, opacity: 1, "--ec-lift": 0 }
-                  }
-                  animate={
-                    reduceMotion
-                      ? { ...target, opacity: expanded ? 1 : 0, "--ec-lift": 1 }
-                      : {
-                          ...(expanded ? target : origin.rect),
-                          opacity: 1,
-                          "--ec-lift": expanded ? 1 : 0,
-                        }
-                  }
-                  transition={{
-                    ...sheetTransition,
-                    // 深阴影比几何动画更早归零，落地时交给卡片的静止阴影。
-                    "--ec-lift": reduceMotion
-                      ? { duration: 0 }
-                      : { duration: expanded ? 0.45 : 0.32, ease: EASE },
-                  }}
-                  onAnimationComplete={settle}
-                >
-                  <DialogPrimitive.Title className="sr-only">
-                    {accessibleName}
-                  </DialogPrimitive.Title>
-                  {/* Radix 给 Root 写了内联 position: relative，绝对定位需通过 style 覆盖。 */}
-                  <ScrollAreaPrimitive.Root
-                    type="scroll"
-                    data-lenis-prevent=""
-                    style={{ position: "absolute", inset: 0 }}
+              <motion.div
+                data-expandable-card-sheet=""
+                data-phase={phase}
+                tabIndex={-1}
+                className="fixed z-50 outline-none"
+                initial={
+                  reduceMotion
+                    ? { ...target, opacity: 0 }
+                    : { ...origin.rect, opacity: 1 }
+                }
+                animate={
+                  reduceMotion
+                    ? { ...target, opacity: expanded ? 1 : 0 }
+                    : { ...(expanded ? target : origin.rect), opacity: 1 }
+                }
+                transition={sheetTransition}
+                onAnimationComplete={settle}
+              >
+                <SmoothCorners asChild radius={radius} smoothing={0.6}>
+                  <motion.div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0"
+                    style={{ boxShadow: LIFT_SHADOW }}
+                    initial={{ opacity: reduceMotion ? 1 : 0 }}
+                    animate={{ opacity: expanded || reduceMotion ? 1 : 0 }}
+                    // 比几何动画更早归零，落地时只剩与卡片相同的静止阴影。
+                    transition={
+                      reduceMotion
+                        ? { duration: 0 }
+                        : { duration: expanded ? 0.45 : 0.32, ease: EASE }
+                    }
+                  />
+                </SmoothCorners>
+                <SmoothCorners asChild radius={radius} smoothing={0.6}>
+                  <div
+                    ref={panelRef}
+                    className={cn(
+                      "absolute inset-0 overflow-hidden border bg-card text-card-foreground",
+                      sheetClassName,
+                    )}
+                    style={{ boxShadow: REST_SHADOW }}
                   >
-                    <ScrollAreaPrimitive.Viewport
-                      ref={scrollRef}
-                      // 内容包裹层默认 display: table，会被横向滚动的子元素撑宽。
-                      className="size-full overscroll-contain [&>div]:!block"
-                      // 飞行期间禁止滚动；原生滚动条已隐藏，开关滚动不改变宽度。
-                      style={
-                        phase === "open"
-                          ? undefined
-                          : { overflowX: "hidden", overflowY: "hidden" }
-                      }
+                    <DialogPrimitive.Title className="sr-only">
+                      {accessibleName}
+                    </DialogPrimitive.Title>
+                    {/* Radix 给 Root 写了内联 position: relative，绝对定位需通过 style 覆盖。 */}
+                    <ScrollAreaPrimitive.Root
+                      type="scroll"
+                      data-lenis-prevent=""
+                      style={{ position: "absolute", inset: 0 }}
                     >
-                      <Surface
-                        {...surface}
-                        state={sheetState}
-                        coverHeight={{
-                          from: reduceMotion ? targetCover : origin.cover,
-                          to: expanded || reduceMotion ? targetCover : origin.cover,
-                          transition: sheetTransition,
-                        }}
-                        trailing={
-                          <span className="grid shrink-0 justify-items-end [&>*]:[grid-area:1/1]">
-                            {actionLabel != null && (
-                              <motion.span
-                                aria-hidden="true"
-                                className={pillClassName}
-                                initial={false}
-                                animate={{ opacity: expanded ? 0 : 1 }}
-                                transition={{
-                                  duration: expanded ? 0.12 : 0.2,
-                                  ease: EASE,
-                                }}
-                              >
-                                {actionLabel}
-                              </motion.span>
-                            )}
-                            {actions && (
-                              <motion.span
-                                className="flex items-center gap-2"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: expanded ? 1 : 0 }}
-                                transition={{
-                                  duration: expanded ? 0.24 : 0.12,
-                                  delay: expanded ? 0.12 : 0,
-                                  ease: EASE,
-                                }}
-                              >
-                                {actions}
-                              </motion.span>
-                            )}
-                          </span>
+                      <ScrollAreaPrimitive.Viewport
+                        ref={scrollRef}
+                        // 内容包裹层默认 display: table，会被横向滚动的子元素撑宽。
+                        className="size-full overscroll-contain [&>div]:!block"
+                        // 飞行期间禁止滚动；原生滚动条已隐藏，开关滚动不改变宽度。
+                        style={
+                          phase === "open"
+                            ? undefined
+                            : { overflowX: "hidden", overflowY: "hidden" }
                         }
-                      />
-                      <motion.div
-                        inert={phase !== "open"}
-                        className={cn("px-7 pt-2 pb-10 max-sm:px-5 max-sm:pb-8", contentClassName)}
-                        initial={{ opacity: 0, y: reduceMotion ? 0 : 16 }}
+                      >
+                        <Surface
+                          {...surface}
+                          state={sheetState}
+                          coverHeight={{
+                            from: reduceMotion ? targetCover : origin.cover,
+                            to: expanded || reduceMotion ? targetCover : origin.cover,
+                            transition: sheetTransition,
+                          }}
+                          trailing={
+                            <span className="grid shrink-0 justify-items-end [&>*]:[grid-area:1/1]">
+                              {actionLabel != null && (
+                                <motion.span
+                                  aria-hidden="true"
+                                  className={pillClassName}
+                                  initial={false}
+                                  animate={{ opacity: expanded ? 0 : 1 }}
+                                  transition={{
+                                    duration: expanded ? 0.12 : 0.2,
+                                    ease: EASE,
+                                  }}
+                                >
+                                  {actionLabel}
+                                </motion.span>
+                              )}
+                              {actions && (
+                                <motion.span
+                                  className="flex items-center gap-2"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: expanded ? 1 : 0 }}
+                                  transition={{
+                                    duration: expanded ? 0.24 : 0.12,
+                                    delay: expanded ? 0.12 : 0,
+                                    ease: EASE,
+                                  }}
+                                >
+                                  {actions}
+                                </motion.span>
+                              )}
+                            </span>
+                          }
+                        />
+                        <motion.div
+                          inert={phase !== "open"}
+                          className={cn("px-7 pt-2 pb-10 max-sm:px-5 max-sm:pb-8", contentClassName)}
+                          // 始终按落点宽度排版：飞行中长文本不随面板宽度逐帧重排，
+                          // 超出部分由面板裁切，随展开逐渐露出。
+                          style={{ width: target.width - frameX }}
+                          initial={{ opacity: 0, y: reduceMotion ? 0 : 16 }}
+                          animate={
+                            expanded
+                              ? { opacity: 1, y: 0, visibility: "visible" }
+                              : {
+                                  opacity: 0,
+                                  y: reduceMotion ? 0 : 8,
+                                  // 淡出后不再参与绘制。
+                                  transitionEnd: { visibility: "hidden" },
+                                }
+                          }
+                          transition={{
+                            duration: expanded ? 0.4 : 0.14,
+                            delay: expanded && !reduceMotion ? 0.14 : 0,
+                            ease: EASE,
+                          }}
+                        >
+                          {children}
+                        </motion.div>
+                      </ScrollAreaPrimitive.Viewport>
+                      <ScrollAreaPrimitive.Scrollbar
+                        orientation="vertical"
+                        className="z-10 flex w-2.5 touch-none px-px py-[18px] select-none"
+                      >
+                        <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-foreground/40 ring-1 ring-background/45" />
+                      </ScrollAreaPrimitive.Scrollbar>
+                    </ScrollAreaPrimitive.Root>
+
+                    <DialogPrimitive.Close asChild>
+                      <motion.button
+                        type="button"
+                        aria-label={closeLabel}
+                        className="absolute top-4 right-4 z-20 grid size-8 cursor-pointer place-items-center rounded-full border border-white/20 bg-zinc-900/55 text-zinc-100 backdrop-blur-md transition-colors hover:bg-zinc-900/75 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        initial={{ opacity: 0, scale: 0.8 }}
                         animate={
                           expanded
-                            ? { opacity: 1, y: 0 }
-                            : { opacity: 0, y: reduceMotion ? 0 : 8 }
+                            ? { opacity: 1, scale: 1 }
+                            : { opacity: 0, scale: 0.8 }
                         }
                         transition={{
-                          duration: expanded ? 0.4 : 0.14,
-                          delay: expanded && !reduceMotion ? 0.14 : 0,
+                          duration: expanded ? 0.24 : 0.12,
+                          delay: expanded ? 0.18 : 0,
                           ease: EASE,
                         }}
                       >
-                        {children}
-                      </motion.div>
-                    </ScrollAreaPrimitive.Viewport>
-                    <ScrollAreaPrimitive.Scrollbar
-                      orientation="vertical"
-                      className="z-10 flex w-2.5 touch-none px-px py-[18px] select-none"
-                    >
-                      <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-foreground/40 ring-1 ring-background/45" />
-                    </ScrollAreaPrimitive.Scrollbar>
-                  </ScrollAreaPrimitive.Root>
-
-                  <DialogPrimitive.Close asChild>
-                    <motion.button
-                      type="button"
-                      aria-label={closeLabel}
-                      className="absolute top-4 right-4 z-20 grid size-8 cursor-pointer place-items-center rounded-full border border-white/20 bg-zinc-900/55 text-zinc-100 backdrop-blur-md transition-colors hover:bg-zinc-900/75 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={
-                        expanded
-                          ? { opacity: 1, scale: 1 }
-                          : { opacity: 0, scale: 0.8 }
-                      }
-                      transition={{
-                        duration: expanded ? 0.24 : 0.12,
-                        delay: expanded ? 0.18 : 0,
-                        ease: EASE,
-                      }}
-                    >
-                      <XIcon className="size-4" aria-hidden="true" />
-                    </motion.button>
-                  </DialogPrimitive.Close>
-                </motion.div>
-              </SmoothCorners>
+                        <XIcon className="size-4" aria-hidden="true" />
+                      </motion.button>
+                    </DialogPrimitive.Close>
+                  </div>
+                </SmoothCorners>
+              </motion.div>
             </DialogPrimitive.Content>
           </DialogPrimitive.Portal>
         )}

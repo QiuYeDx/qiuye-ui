@@ -351,7 +351,7 @@ export const componentRegistry: ComponentRegistry = {
           {
             name: "live",
             type: "boolean",
-            description: "封面是否应运行循环动画：可见、未被浮层占用且允许动态效果。",
+            description: "封面是否应运行循环动画：可见、未被浮层占用、不在展开/收起过程中且允许动态效果。",
             required: true,
           },
           {
