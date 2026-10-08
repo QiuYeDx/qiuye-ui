@@ -911,11 +911,13 @@ export function ExpandableCard({
                             transition: sheetTransition,
                           }}
                           trailing={
+                            // 胶囊与操作区叠在同一格中交叉淡入淡出。透明度 < 1 会建立层叠上下文，
+                            // 隐藏的胶囊会盖在操作区上方吞掉点击：胶囊不接收指针，操作区置于上层。
                             <span className="grid shrink-0 justify-items-end [&>*]:[grid-area:1/1]">
                               {actionLabel != null && (
                                 <motion.span
                                   aria-hidden="true"
-                                  className={pillClassName}
+                                  className={cn(pillClassName, "pointer-events-none")}
                                   initial={false}
                                   animate={{ opacity: expanded ? 0 : 1 }}
                                   transition={{
@@ -928,7 +930,8 @@ export function ExpandableCard({
                               )}
                               {actions && (
                                 <motion.span
-                                  className="flex items-center gap-2"
+                                  inert={!expanded}
+                                  className="relative z-[1] flex items-center gap-2"
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: expanded ? 1 : 0 }}
                                   transition={{
