@@ -250,7 +250,7 @@ export const componentRegistry: ComponentRegistry = {
           {
             name: "onOpenChange",
             type: "(open: boolean) => void",
-            description: "点击卡片、Esc、遮罩或关闭按钮时触发。",
+            description: "点击卡片、Esc、遮罩、关闭按钮或触屏下拉关闭时触发。",
             required: false,
           },
           {
@@ -269,9 +269,9 @@ export const componentRegistry: ComponentRegistry = {
           },
           {
             name: "expandedCoverHeight",
-            type: "number | ((viewportHeight: number) => number)",
-            description: "浮层中的封面高度（px），或根据视口高度计算。",
-            default: "clamp(240, 42vh, 400)",
+            type: "number | ((context: ExpandableCardCoverContext) => number)",
+            description: "浮层中的封面高度（px），或根据视口、浮层与卡片尺寸计算。",
+            default: "窄屏按卡片封面比例等比放大（≤ 62vh），宽屏 clamp(240, 42vh, 400)",
             required: false,
           },
           {
@@ -362,8 +362,31 @@ export const componentRegistry: ComponentRegistry = {
           },
         ],
       },
+      {
+        componentName: "ExpandableCardCoverContext（expandedCoverHeight 参数）",
+        props: [
+          {
+            name: "viewportWidth / viewportHeight",
+            type: "number",
+            description: "视口尺寸（px）。",
+            required: true,
+          },
+          {
+            name: "sheetWidth",
+            type: "number",
+            description: "展开后浮层的宽度（px）。",
+            required: true,
+          },
+          {
+            name: "cardWidth / cardCoverHeight",
+            type: "number",
+            description: "卡片宽度与卡片中封面的高度（px），可用于按卡片比例等比放大。",
+            required: true,
+          },
+        ],
+      },
     ],
-    version: "1.0.0",
+    version: "1.1.0",
     author: "QiuYeDx",
     tags: ["卡片", "App Store", "展开", "容器变形", "浮层", "视差", "详情"],
     cliName: "expandable-card",

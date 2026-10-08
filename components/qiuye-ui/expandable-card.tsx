@@ -9,6 +9,7 @@ import {
   motionValue,
   useInView,
   useMotionTemplate,
+  useMotionValue,
   useReducedMotion,
   useSpring,
   useTransform,
@@ -22,6 +23,7 @@ import { SmoothCorners } from "@/components/qiuye-ui/smooth-corners";
 
 const SHEET_SPRING = { type: "spring" as const, duration: 0.5, bounce: 0 };
 const PRESS_SPRING = { type: "spring" as const, duration: 0.3, bounce: 0.18 };
+const SNAP_SPRING = { type: "spring" as const, duration: 0.35, bounce: 0.12 };
 const POINTER_SPRING = { stiffness: 240, damping: 28, mass: 0.7 };
 const EASE = [0.22, 1, 0.36, 1] as const;
 const FOOTER_HEIGHT = 84;
@@ -214,8 +216,40 @@ function readSheetRect(width: number, height: number, maxWidth: number): Rect {
   };
 }
 
-const defaultCoverHeight = (viewportHeight: number) =>
-  Math.round(Math.min(400, Math.max(240, viewportHeight * 0.42)));
+/** 计算浮层封面高度时可用的尺寸信息 */
+export interface ExpandableCardCoverContext {
+  /** 视口宽度（px） */
+  viewportWidth: number;
+  /** 视口高度（px） */
+  viewportHeight: number;
+  /** 浮层宽度（px） */
+  sheetWidth: number;
+  /** 卡片宽度（px） */
+  cardWidth: number;
+  /** 卡片中的封面高度（px） */
+  cardCoverHeight: number;
+}
+
+// 窄屏上浮层只比卡片略宽：按卡片封面比例等比放大，构图不重排，
+// 只是整体放大；宽屏浮层远宽于卡片，改用随视口高度变化的固定区间。
+function defaultCoverHeight({
+  viewportWidth,
+  viewportHeight,
+  sheetWidth,
+  cardWidth,
+  cardCoverHeight,
+}: ExpandableCardCoverContext) {
+  if (viewportWidth < 640 && cardWidth > 0 && cardCoverHeight > 0) {
+    const proportional = (cardCoverHeight * sheetWidth) / cardWidth;
+    return Math.round(Math.min(proportional, viewportHeight * 0.62));
+  }
+  return Math.round(Math.min(400, Math.max(240, viewportHeight * 0.42)));
+}
+
+// 下拉关闭：位移越大阻力越大，浮层最多缩小到 0.8。
+const dragScale = (offset: number) => 1 - (0.2 * offset) / (offset + 200);
+const DISMISS_OFFSET = 110;
+const DISMISS_VELOCITY = 0.5; // px/ms
 
 function readCard(element: HTMLElement) {
   const rect = element.getBoundingClientRect();
@@ -411,7 +445,7 @@ export interface ExpandableCardProps {
    * @default false
    */
   defaultOpen?: boolean;
-  /** 展开状态变化回调（点击卡片、Esc、遮罩、关闭按钮） */
+  /** 展开状态变化回调（点击卡片、Esc、遮罩、关闭按钮、触屏下拉关闭） */
   onOpenChange?: (open: boolean) => void;
   /**
    * 是否启用卡片内的指针视差与高光
@@ -426,10 +460,12 @@ export interface ExpandableCardProps {
   /**
    * 浮层中的封面高度
    * - 传入 `number` 时单位为 px
-   * - 传入函数时接收视口高度，返回 px
-   * @default (vh) => clamp(240, vh * 0.42, 400)
+   * - 传入函数时接收视口与卡片尺寸，返回 px
+   * @default 视口宽度小于 640px 时按卡片封面比例等比放大（不超过视口高度的 62%），否则为 clamp(240, vh * 0.42, 400)
    */
-  expandedCoverHeight?: number | ((viewportHeight: number) => number);
+  expandedCoverHeight?:
+    | number
+    | ((context: ExpandableCardCoverContext) => number);
   /**
    * 卡片与浮层的圆角半径（px），使用平滑圆角
    * @default 28
@@ -455,6 +491,7 @@ export interface ExpandableCardProps {
  * - 按数值动画几何而非缩放，文字与圆角在过渡中不变形
  * - 悬停上浮、封面分层视差与高光，按压缩小反馈
  * - 叠加滚动条不占宽度，展开前后内容不重排；阴影在落地时无缝交接
+ * - 触屏上内容滚动到顶部后继续下拉，浮层随手指缩小，松手超过阈值即收起
  * - 基于 Radix Dialog：焦点陷阱、Esc / 遮罩关闭、焦点还原；支持受控模式与减少动态效果
  *
  * @example
@@ -561,6 +598,97 @@ export function ExpandableCard({
     return () => window.removeEventListener("resize", onResize);
   }, [phase]);
 
+  // 下拉关闭：内容滚动到顶部时继续下拉，浮层随手指缩小；
+  // 松手时超过阈值（或快速下滑）则收起，否则弹回。
+  const drag = useMotionValue(0);
+  const sheetScale = useTransform(drag, dragScale);
+  const sheetY = useTransform(drag, (offset) => offset * 0.12);
+  const setOpenRef = React.useRef(setOpen);
+  setOpenRef.current = setOpen;
+
+  React.useEffect(() => {
+    const scroller = scrollRef.current;
+    if (phase !== "open" || !scroller) return;
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+    let dragging = false;
+    let lastY = 0;
+    let lastTime = 0;
+    let velocity = 0;
+
+    const onStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1) {
+        tracking = false;
+        return;
+      }
+      const touch = event.touches[0];
+      startX = touch.clientX;
+      startY = touch.clientY;
+      tracking = scroller.scrollTop <= 0;
+      dragging = false;
+    };
+    const onMove = (event: TouchEvent) => {
+      if (!tracking) return;
+      const touch = event.touches[0];
+      const dx = touch.clientX - startX;
+      const dy = touch.clientY - startY;
+      if (!dragging) {
+        // 只接管从顶部开始、以纵向下拉为主的手势；其余交给原生滚动。
+        if (Math.abs(dx) > Math.abs(dy) || dy < 0 || scroller.scrollTop > 0) {
+          if (Math.abs(dx) + Math.abs(dy) > 6) tracking = false;
+          return;
+        }
+        if (dy < 6) return;
+        dragging = true;
+        startY = touch.clientY;
+        lastY = touch.clientY;
+        lastTime = event.timeStamp;
+        velocity = 0;
+      }
+      event.preventDefault();
+      const elapsed = event.timeStamp - lastTime;
+      if (elapsed > 0) velocity = (touch.clientY - lastY) / elapsed;
+      lastY = touch.clientY;
+      lastTime = event.timeStamp;
+      drag.set(Math.max(0, touch.clientY - startY));
+    };
+    const onEnd = () => {
+      if (!dragging) {
+        tracking = false;
+        return;
+      }
+      tracking = false;
+      dragging = false;
+      const offset = drag.get();
+      if (
+        offset > DISMISS_OFFSET ||
+        (velocity > DISMISS_VELOCITY && offset > 24)
+      ) {
+        // 缩放随收起飞行同步回到 1，视觉尺寸连续落回卡片。
+        animate(drag, 0, SHEET_SPRING);
+        setOpenRef.current(false);
+      } else {
+        animate(drag, 0, SNAP_SPRING);
+      }
+    };
+
+    scroller.addEventListener("touchstart", onStart, { passive: true });
+    scroller.addEventListener("touchmove", onMove, { passive: false });
+    scroller.addEventListener("touchend", onEnd);
+    scroller.addEventListener("touchcancel", onEnd);
+    return () => {
+      scroller.removeEventListener("touchstart", onStart);
+      scroller.removeEventListener("touchmove", onMove);
+      scroller.removeEventListener("touchend", onEnd);
+      scroller.removeEventListener("touchcancel", onEnd);
+    };
+  }, [phase, drag]);
+
+  React.useEffect(() => {
+    if (phase === "closed") drag.jump(0);
+  }, [phase, drag]);
+
   const settle = () => {
     setPhase((current) =>
       current === "opening" ? "open" : current === "closing" ? "closed" : current,
@@ -572,7 +700,13 @@ export function ExpandableCard({
   const target = readSheetRect(viewport.width, viewport.height, maxWidth);
   const targetCover =
     typeof expandedCoverHeight === "function"
-      ? expandedCoverHeight(viewport.height)
+      ? expandedCoverHeight({
+          viewportWidth: viewport.width,
+          viewportHeight: viewport.height,
+          sheetWidth: target.width,
+          cardWidth: origin.rect.width,
+          cardCoverHeight: origin.cover,
+        })
       : expandedCoverHeight;
   const sheetTransition: Transition = reduceMotion
     ? { duration: 0.2 }
@@ -710,6 +844,7 @@ export function ExpandableCard({
                 data-phase={phase}
                 tabIndex={-1}
                 className="fixed z-50 outline-none"
+                style={{ scale: sheetScale, y: sheetY }}
                 initial={
                   reduceMotion
                     ? { ...target, opacity: 0 }

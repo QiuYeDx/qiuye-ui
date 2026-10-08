@@ -273,7 +273,7 @@ const auroraBody = (
       ["数值驱动的变形", "按数值动画位置与尺寸，文字和圆角在过渡中不会被拉伸。"],
       ["阴影无缝交接", "深阴影随浮层升起，落地前归零，与卡片阴影逐值一致。"],
       ["不重排的滚动", "叠加滚动条不占宽度，展开完成前后内容不跳动。"],
-      ["完整的可访问性", "焦点陷阱、Esc 与遮罩关闭、关闭后焦点回到卡片。"],
+      ["完整的可访问性", "焦点陷阱、Esc 与遮罩关闭、关闭后焦点回到卡片；触屏上滚动到顶部后下拉即可关闭。"],
     ]}
   />
 );
@@ -318,7 +318,7 @@ export function ExpandableCardDemo() {
             <ViewSourceButton code={galleryCode} />
           </div>
           <CardDescription>
-            点击卡片，从原位置放大为居中详情；Esc、遮罩或右上角按钮关闭后飞回原卡片。
+            点击卡片，从原位置放大为居中详情；Esc、遮罩、右上角按钮或触屏下拉关闭后飞回原卡片。
             悬停可以看到分层视差与高光。
           </CardDescription>
         </CardHeader>
@@ -459,7 +459,7 @@ export function ExpandableCardDemo() {
                 ["深链", "可选"],
               ]}
               paragraphs={[
-                "卡片点击、Esc、遮罩与关闭按钮都会调用 onOpenChange；外部把 open 改为 false 时，同样完整播放收起动画。",
+                "卡片点击、Esc、遮罩、关闭按钮与下拉关闭都会调用 onOpenChange；外部把 open 改为 false 时，同样完整播放收起动画。",
               ]}
               highlights={[
                 ["URL 同步", "在 onOpenChange 中写入 ?item=，页面加载时据此设置 open。"],
