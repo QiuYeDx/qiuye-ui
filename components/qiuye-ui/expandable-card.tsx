@@ -37,6 +37,10 @@ const HOVER_SHADOW =
 // 不逐帧改写阴影颜色，也不改写会被整棵子树继承的自定义属性。
 const LIFT_SHADOW = "0 40px 100px -40px rgb(0 0 0 / 0.5)";
 
+// 飞行中覆盖 SmoothCorners：普通圆角走合成器的快速裁切路径。
+const roundCorners = (radius: number) =>
+  ({ borderRadius: radius, cornerShape: "round" }) as React.CSSProperties;
+
 type Phase = "closed" | "opening" | "open" | "closing";
 interface Rect {
   top: number;
@@ -216,6 +220,13 @@ function readSheetRect(width: number, height: number, maxWidth: number): Rect {
   };
 }
 
+// 封面标题字号：与 Surface 中的 `text-[clamp(1.25rem,6.5cqw,1.75rem)]` 一致。
+const titleSize = (coverWidth: number, rem: number) =>
+  Math.min(1.75 * rem, Math.max(1.25 * rem, coverWidth * 0.065));
+
+const readRem = () =>
+  parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+
 /** 计算浮层封面高度时可用的尺寸信息 */
 export interface ExpandableCardCoverContext {
   /** 视口宽度（px） */
@@ -291,6 +302,12 @@ interface SurfaceProps {
   state: ExpandableCardState;
   /** 仅浮层：按数值动画封面高度；卡片中封面由 flex 撑满 */
   coverHeight?: { from: number; to: number; transition: Transition };
+  /**
+   * 仅浮层：标题按落点字号排版，用 transform 从卡片字号比例缩放到 1。
+   * 卡片中标题字号随封面宽度（cqw）变化；若浮层也这样做，飞行中每帧都要
+   * 重新 shaping 标题文本。
+   */
+  titleScale?: { from: number; to: number; size: number; transition: Transition };
   /** 仅卡片：悬停时封面放大并显示高光 */
   glare?: MotionValue<string>;
 }
@@ -307,6 +324,7 @@ function Surface({
   footer,
   state,
   coverHeight,
+  titleScale,
   glare,
 }: SurfaceProps) {
   return (
@@ -353,15 +371,20 @@ function Surface({
                 </p>
               )}
               {title && (
-                <p
+                <motion.p
                   className={cn(
                     // 字号随封面宽度（size 容器）变化，窄卡片也保持预期断行。
-                    "mt-1.5 max-w-[13em] text-[clamp(1.25rem,6.5cqw,1.75rem)] leading-[1.28] font-bold tracking-[-0.02em] text-balance whitespace-pre-line",
+                    // max-width 以 em 计，任何字号下断行一致，浮层按比例缩放时与卡片对齐。
+                    "mt-1.5 max-w-[13em] origin-top-left text-[clamp(1.25rem,6.5cqw,1.75rem)] leading-[1.28] font-bold tracking-[-0.02em] text-balance whitespace-pre-line",
                     tone === "light" && "[text-shadow:0_1px_12px_rgb(0_0_0/0.25)]",
                   )}
+                  style={titleScale ? { fontSize: titleScale.size } : undefined}
+                  initial={titleScale ? { scale: titleScale.from } : false}
+                  animate={titleScale ? { scale: titleScale.to } : undefined}
+                  transition={titleScale?.transition}
                 >
                   {title}
-                </p>
+                </motion.p>
               )}
             </div>
           )}
@@ -491,6 +514,8 @@ export interface ExpandableCardProps {
  * - 按数值动画几何而非缩放，文字与圆角在过渡中不变形
  * - 悬停上浮、封面分层视差与高光，按压缩小反馈
  * - 叠加滚动条不占宽度，展开前后内容不重排；阴影在落地时无缝交接
+ * - 飞行中只做合成器友好的工作：普通圆角裁切、深阴影按落点尺寸栅格化一次后缩放、
+ *   标题用 transform 缩放
  * - 触屏上内容滚动到顶部后继续下拉，浮层随手指缩小，松手超过阈值即收起
  * - 基于 Radix Dialog：焦点陷阱、Esc / 遮罩关闭、焦点还原；支持受控模式与减少动态效果
  *
@@ -554,15 +579,29 @@ export function ExpandableCard({
     rect: { top: 0, left: 0, width: 0, height: 0 },
     cover: 0,
   });
-  const [viewport, setViewport] = React.useState({ width: 1280, height: 800 });
+  const [viewport, setViewport] = React.useState({
+    width: 1280,
+    height: 800,
+    rem: 16,
+  });
+
+  // 深阴影层按落点尺寸绘制一次，飞行中只随面板当前尺寸缩放（见渲染处注释）。
+  const liftScaleX = useMotionValue(1);
+  const liftScaleY = useMotionValue(1);
 
   // 打开 / 关闭都以卡片当前位置为起点或落点；收起时重新测量。
   React.useLayoutEffect(() => {
     const card = cardRef.current;
     if (!card) return;
     if (requestedOpen && (phase === "closed" || phase === "closing")) {
-      setViewport({ width: window.innerWidth, height: window.innerHeight });
-      setOrigin(readCard(card));
+      const measured = readCard(card);
+      if (!reduceMotion) {
+        const landing = readSheetRect(window.innerWidth, window.innerHeight, maxWidth);
+        liftScaleX.jump(measured.rect.width / landing.width);
+        liftScaleY.jump(measured.rect.height / landing.height);
+      }
+      setViewport({ width: window.innerWidth, height: window.innerHeight, rem: readRem() });
+      setOrigin(measured);
       setPhase("opening");
     } else if (!requestedOpen && (phase === "opening" || phase === "open")) {
       setOrigin(readCard(card));
@@ -593,7 +632,7 @@ export function ExpandableCard({
   React.useEffect(() => {
     if (phase === "closed") return;
     const onResize = () =>
-      setViewport({ width: window.innerWidth, height: window.innerHeight });
+      setViewport({ width: window.innerWidth, height: window.innerHeight, rem: readRem() });
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [phase]);
@@ -697,6 +736,7 @@ export function ExpandableCard({
 
   const active = phase !== "closed";
   const expanded = phase === "opening" || phase === "open";
+  const flying = !reduceMotion && (phase === "opening" || phase === "closing");
   const target = readSheetRect(viewport.width, viewport.height, maxWidth);
   const targetCover =
     typeof expandedCoverHeight === "function"
@@ -708,6 +748,10 @@ export function ExpandableCard({
           cardCoverHeight: origin.cover,
         })
       : expandedCoverHeight;
+  // 浮层标题按落点字号排版，起飞 / 落回时按卡片字号的比例缩放。
+  const targetTitle = titleSize(target.width, viewport.rem);
+  const titleRatio =
+    origin.rect.width > 0 ? titleSize(origin.rect.width, viewport.rem) / targetTitle : 1;
   const sheetTransition: Transition = reduceMotion
     ? { duration: 0.2 }
     : SHEET_SPRING;
@@ -720,19 +764,18 @@ export function ExpandableCard({
   const glareX = useTransform(x, (value) => 50 + value * 40);
   const glareY = useTransform(y, (value) => 50 + value * 40);
   const glare = useMotionTemplate`radial-gradient(60% 60% at ${glareX}% ${glareY}%, rgb(255 255 255 / 0.14), transparent 70%)`;
-  const cardState: ExpandableCardState = {
-    x,
-    y,
-    live: inView && !reduceMotion && !active,
-    expanded: false,
-  };
-  const sheetState: ExpandableCardState = {
-    x: STILL,
-    y: STILL,
-    // 飞行中封面逐帧变化尺寸，循环动画等落地后再运行。
-    live: !reduceMotion && phase === "open",
-    expanded: true,
-  };
+  // 上下文对象保持引用稳定：否则每次相位变化都会重渲染封面里的全部图层。
+  const cardLive = inView && !reduceMotion && !active;
+  const cardState = React.useMemo<ExpandableCardState>(
+    () => ({ x, y, live: cardLive, expanded: false }),
+    [x, y, cardLive],
+  );
+  // 飞行中封面逐帧变化尺寸，循环动画等落地后再运行。
+  const sheetLive = !reduceMotion && phase === "open";
+  const sheetState = React.useMemo<ExpandableCardState>(
+    () => ({ x: STILL, y: STILL, live: sheetLive, expanded: true }),
+    [sheetLive],
+  );
 
   const surface = {
     cover,
@@ -856,13 +899,27 @@ export function ExpandableCard({
                     : { ...(expanded ? target : origin.rect), opacity: 1 }
                 }
                 transition={sheetTransition}
+                onUpdate={(latest) => {
+                  const width = parseFloat(String(latest.width));
+                  const height = parseFloat(String(latest.height));
+                  if (width > 0) liftScaleX.set(width / target.width);
+                  if (height > 0) liftScaleY.set(height / target.height);
+                }}
                 onAnimationComplete={settle}
               >
                 <SmoothCorners asChild radius={radius} smoothing={0.6}>
                   <motion.div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-0"
-                    style={{ boxShadow: LIFT_SHADOW }}
+                    // 深阴影按落点尺寸绘制一次，飞行中只按面板当前尺寸做 transform 缩放：
+                    // 大半径模糊不再逐帧重新栅格化，柔和阴影被非等比拉伸也看不出来。
+                    className="pointer-events-none absolute top-0 left-0 origin-top-left will-change-transform"
+                    style={{
+                      width: target.width,
+                      height: target.height,
+                      boxShadow: LIFT_SHADOW,
+                      scaleX: liftScaleX,
+                      scaleY: liftScaleY,
+                    }}
                     initial={{ opacity: reduceMotion ? 1 : 0 }}
                     animate={{ opacity: expanded || reduceMotion ? 1 : 0 }}
                     // 比几何动画更早归零，落地时只剩与卡片相同的静止阴影。
@@ -880,7 +937,12 @@ export function ExpandableCard({
                       "absolute inset-0 overflow-hidden border bg-card text-card-foreground",
                       sheetClassName,
                     )}
-                    style={{ boxShadow: REST_SHADOW }}
+                    // 飞行中用普通圆角：合成器可直接裁切圆角矩形；超椭圆圆角会让面板内
+                    // 正在动画的图层每帧重新生成遮罩。落地后换回平滑圆角。
+                    style={{
+                      boxShadow: REST_SHADOW,
+                      ...(flying ? roundCorners(radius) : undefined),
+                    }}
                   >
                     <DialogPrimitive.Title className="sr-only">
                       {accessibleName}
@@ -908,6 +970,12 @@ export function ExpandableCard({
                           coverHeight={{
                             from: reduceMotion ? targetCover : origin.cover,
                             to: expanded || reduceMotion ? targetCover : origin.cover,
+                            transition: sheetTransition,
+                          }}
+                          titleScale={{
+                            from: reduceMotion ? 1 : titleRatio,
+                            to: expanded || reduceMotion ? 1 : titleRatio,
+                            size: targetTitle,
                             transition: sheetTransition,
                           }}
                           trailing={
