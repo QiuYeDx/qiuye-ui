@@ -225,7 +225,8 @@ function ScrollableDialogContent({
       ref={containerRef}
       className={cn(
         "relative overflow-hidden",
-        "[&_[data-radix-scroll-area-viewport]]:border-t [&_[data-radix-scroll-area-viewport]]:border-b [&_[data-radix-scroll-area-viewport]]:border-background",
+        // 只作用于自身的 viewport：后代选择器会给内容里嵌套的 ScrollArea 也加上边框
+        "[&>[data-radix-scroll-area-viewport]]:border-t [&>[data-radix-scroll-area-viewport]]:border-b [&>[data-radix-scroll-area-viewport]]:border-background",
         "[&_[data-radix-scroll-area-viewport]>div]:!block [&_[data-radix-scroll-area-viewport]>div]:!min-w-0 [&_[data-radix-scroll-area-viewport]>div]:!w-full",
         className
       )}

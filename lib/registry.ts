@@ -1046,7 +1046,7 @@ export const componentRegistry: ComponentRegistry = {
         ],
       },
     ],
-    version: "1.0.0",
+    version: "1.0.1",
     author: "QiuYeDx",
     tags: ["dialog", "modal", "scrollable", "popup", "overlay", "shadcn"],
     cliName: "scrollable-dialog",
