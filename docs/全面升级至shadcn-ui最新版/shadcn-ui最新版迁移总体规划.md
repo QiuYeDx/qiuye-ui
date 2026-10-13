@@ -53,6 +53,8 @@
 - **结构类名**：例如 `group/card`、`@container/card-header`、`cn-font-heading`、`cn-menu-target`，用来做主题钩子，可以保留不管。
 - **Card 子组件依赖 `--card-spacing`**：`CardHeader`、`CardContent`、`CardFooter` 的内边距来自 `<Card>` 上定义的 `--card-spacing`。如果脱离 `<Card>` 使用（例如包在自定义容器里），内边距会变成 0，需要在容器上补 `[--card-spacing:--spacing(4)]`，以及 `flex flex-col gap-(--card-spacing) py-(--card-spacing)`。
 - **Tooltip 不再自带 Provider**：需要在应用根部包一层 `TooltipProvider`。
+- **旧版 Card 的内边距覆盖会叠加**：更早的 shadcn Card（v3 时代）间距写在子组件上：CardHeader `p-6`、CardContent `p-6 pt-0`、CardTitle `text-2xl`，调用处常见 `p-4 md:p-6`、`pt-0`、`pb-2`、`pt-6` 之类的覆盖。nova 的间距在 Card 上（`py-4 gap-4`），这些覆盖会叠加，导致卡片变高，应当直接删除。CardTitle 默认变为 `text-base`。
+- **图片贴顶的卡片要加 `py-0 gap-0`**：nova 只在第一个子元素是 `<img>` 时自动去掉顶部内边距；图片外面包了 div、或卡片里只有图片时，需要手动加 `py-0`（必要时加 `gap-0`）。
 - **覆盖样式必须用同一个变体**：例如 nova 的 `group-data-horizontal/tabs:h-8`，只能用 `group-data-horizontal/tabs:h-auto` 覆盖，普通的 `h-auto` 不生效。已记录在 PIT-0007。
 
 ### CLI 能做什么，不能做什么
@@ -117,7 +119,10 @@
 
 ### 阶段 2：主力项目
 
-1. **qiuyedx-blog**（即 qiuvision）：组件最多，有 6 个 Magic UI 组件（不受影响），alert、sidebar 有定制。建议在两次功能开发之间集中处理。
+1. **qiuyedx-blog**（即 qiuvision）：✅ 2026-10-13 完成，分支 `chore/shadcn-nova`，待合入。
+   - 真正的自有定制只有 ScrollArea（viewportRef / viewportClassName）和 Pagination 中文文案，sidebar 的差异只是格式化。
+   - QiuYe UI 本地定制：Typewriter `initialDelay`、use-prevent-scroll 的 `qvScrollLocked` 计数、MermaidBlock 按布局高度测量。前两项与 MermaidBlock 修复值得回推到组件库。
+   - 调用处适配集中在参考图库（旧 Card 内边距覆盖、图片卡片贴边）。
 2. **FusionKit**：定制最重（dialog、switch、calendar、accordion），界面密度最高。可以借助现有的测试做回归验证。
 
 ### 阶段 3：模板与其余项目
@@ -155,6 +160,8 @@ pixel-land-fe、pixil-canvas：保持现状。重新开发时，先升级到 Rea
    - 覆盖 nova 变体类名时，必须使用同一变体
    - 脱离 <Card> 使用的 CardHeader / CardContent（grep 出来逐个检查），需要补 --card-spacing
    - 根部是否已有 TooltipProvider
+   - CardHeader / CardContent 上的 p-* / pt-* / pb-* 覆盖（旧 Card 遗留），以及图片贴顶、只装图片的 Card
+   - 重装 sidebar 会顺带覆盖 hooks/use-mobile.ts，重装后检查并还原
 7. 验证：typecheck + lint + test + build；关键页面在深色和浅色模式下各截图一次，与迁移前对比
 8. 合入 main，删除不再使用的 @radix-ui/* 依赖
 ```
