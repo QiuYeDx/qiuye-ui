@@ -121,7 +121,7 @@
 
 1. **qiuyedx-blog**（即 qiuvision）：✅ 2026-10-13 完成，分支 `chore/shadcn-nova`，待合入。
    - 真正的自有定制只有 ScrollArea（viewportRef / viewportClassName）和 Pagination 中文文案，sidebar 的差异只是格式化。
-   - QiuYe UI 本地定制：Typewriter `initialDelay`、use-prevent-scroll 的 `qvScrollLocked` 计数、MermaidBlock 按布局高度测量。前两项与 MermaidBlock 修复值得回推到组件库。
+   - QiuYe UI 本地定制：Typewriter `initialDelay`、use-prevent-scroll 的 `qvScrollLocked` 计数、MermaidBlock 按布局高度测量。其中 Typewriter 的 initialDelay 与 MermaidBlock 的修复是通用改进，值得回推到组件库；qvScrollLocked 是博客专用。
    - 调用处适配集中在参考图库（旧 Card 内边距覆盖、图片卡片贴边）。
 2. **FusionKit**：定制最重（dialog、switch、calendar、accordion），界面密度最高。可以借助现有的测试做回归验证。
 
