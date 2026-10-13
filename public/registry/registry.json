@@ -143,8 +143,7 @@
       "author": "QiuYeDx <me@qiuyedx.com>",
       "dependencies": [
         "motion",
-        "@radix-ui/react-dialog",
-        "@radix-ui/react-scroll-area",
+        "radix-ui",
         "lucide-react"
       ],
       "registryDependencies": [
@@ -453,7 +452,7 @@
       "author": "QiuYeDx <me@qiuyedx.com>",
       "dependencies": [
         "@qiuyedx/smooth-corners",
-        "@radix-ui/react-slot"
+        "radix-ui"
       ],
       "registryDependencies": [],
       "files": [

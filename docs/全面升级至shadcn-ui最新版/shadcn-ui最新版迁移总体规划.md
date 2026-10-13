@@ -51,6 +51,8 @@
 - **图标与内边距联动**：按钮依靠 `has-data-[icon=inline-start]` 自动收窄内边距，需要给图标加上 `data-icon="inline-start"` 或 `data-icon="inline-end"`。不加也能用，只是两侧内边距不会自动收窄。
 - **圆角从减法改为乘法**：`--radius-sm/md/xl` 由 `calc(var(--radius) - 4px)` 改为 `calc(var(--radius) * 0.6)` 等，并新增 `--radius-2xl`、`3xl`、`4xl`。`--radius` 不变时，sm、md、xl 的结果会有细微差别。
 - **结构类名**：例如 `group/card`、`@container/card-header`、`cn-font-heading`、`cn-menu-target`，用来做主题钩子，可以保留不管。
+- **Card 子组件依赖 `--card-spacing`**：`CardHeader`、`CardContent`、`CardFooter` 的内边距来自 `<Card>` 上定义的 `--card-spacing`。如果脱离 `<Card>` 使用（例如包在自定义容器里），内边距会变成 0，需要在容器上补 `[--card-spacing:--spacing(4)]`，以及 `flex flex-col gap-(--card-spacing) py-(--card-spacing)`。
+- **Tooltip 不再自带 Provider**：需要在应用根部包一层 `TooltipProvider`。
 - **覆盖样式必须用同一个变体**：例如 nova 的 `group-data-horizontal/tabs:h-8`，只能用 `group-data-horizontal/tabs:h-auto` 覆盖，普通的 `h-auto` 不生效。已记录在 PIT-0007。
 
 ### CLI 能做什么，不能做什么
@@ -88,7 +90,7 @@
 ### 阶段 0：准备（约 0.5 天）
 
 - [x] 在 QiuYe UI 中冻结 `public/registry/v1/`，并在官网的 CLI 指南页和 README 中写明 v1 地址；`update-registry` 会跳过 `v<数字>` 目录，并把源码统一为 LF（彻底解决 PIT-0005）。
-- [ ] 把第 1 节用到的组件比对脚本整理成 `scripts/shadcn-audit.mjs`：传入项目路径，输出每个 ui 组件属于「与官方一致 / 小改 / 自有定制 / 非官方组件」中的哪一类。
+- [x] 把第 1 节用到的组件比对脚本整理成 `scripts/shadcn-audit.mjs`：传入项目路径，输出每个 ui 组件属于「一致 / 有差异 / 非官方」中的哪一类，并给出提交次数（大于 1 说明安装后改动过），`--out` 输出差异文件。
 - [ ] （可选）在 qiuye-skills 中新增一个「shadcn-nova 迁移」skill，把第 6 节的流程固化下来，之后每个项目交给 Agent 按同一套步骤执行。
 
 ### 阶段 1：QiuYe UI（在 `feat/shadcn-nova` 分支上进行）
@@ -97,18 +99,19 @@
 
 **1a. 组件库本身**（影响所有消费方，优先做）
 
-- [ ] 逐个审查 17 个组件：对齐 nova 的尺寸、圆角、ring 等视觉语言，并检查对宿主组件的覆盖是否使用了同一变体。
-- [ ] 补齐剩余组件的 `labels` 国际化，以及 react-hooks v7 的 lint 问题（目前还剩 29 处）。
-- [ ] 双宿主验证，作为合入 main 的门槛：
-  - nova 宿主：qiuye-react-template 的组件展示页，`add -o` 之后 `pnpm check` 通过，并完成截图验收。
-  - new-york 宿主：qiuye-electron-template 的副本，`add` 之后 tsc 通过，并检查没有明显的视觉错位。
+- [x] 逐个审查 17 个组件：尺寸预设统一为 sm / md / lg = 28 / 32 / 36px（SegmentedControl、ClipPathTabs、ColorPicker），与 Button 的 sm / default / lg 对齐；expandable-card、smooth-corners 改用 `radix-ui` 单包。
+- [ ] （后续单独处理，不阻塞迁移）补齐剩余组件的 `labels` 国际化，以及 react-hooks v7 的 lint 问题（目前还剩 29 处）。
+- [x] 双宿主验证，作为合入 main 的门槛（2026-10-13 通过，本地 registry 安装全部 17 个组件）：
+  - nova 宿主：qiuye-react-template 的副本，typecheck 和 lint 通过（vitest 在临时目录中因 Windows 路径过长无法启动，与代码无关）；视觉验收以官网为准，官网现在本身就是 nova 宿主。
+  - new-york 宿主：qiuye-electron-template 的副本，typecheck 通过。
+  - 注意：`add @qiuye-ui/* -o` 会把 registryDependencies（button、dialog 等）一起覆盖成官方版本，已有定制的项目不要带 `-o`，先用 `--diff` 预览。
 
 **1b. 官网**（只影响官网自身）
 
-- [ ] `components.json` 的 style 改为 `radix-nova`，引入 `shadcn/tailwind.css`，圆角改为乘法，执行 `shadcn migrate radix` 统一到单包。
-- [ ] 用 `shadcn add -o` 重装 33 个 ui 组件，再根据审查脚本的结果补回 button、sidebar 等组件的定制。
-- [ ] 官网页面适配：首页、组件详情、CLI 指南页上的尺寸覆盖与间距，深色和浅色模式各截图一次。
-- [ ] 新增一个文档页「从 new-york 迁移」，可以基于本文第 2 节改写，方便消费方查阅。
+- [x] `components.json` 的 style 改为 `radix-nova`，引入 `shadcn/tailwind.css`，圆角改为乘法；移除全部 20 个 `@radix-ui/*` 依赖，统一使用 `radix-ui`；`lib/utils` 改为转出 `cn` 包；`react-resizable-panels` 升级到 v4（nova 的 resizable 需要）。
+- [x] 用 `shadcn add -o` 重装 33 个 ui 组件。审查脚本显示，安装后真正改动过的只有 button（平滑圆角与按压缩放），已补回，并让平滑圆角半径跟随 nova 的 `data-size`。
+- [x] 官网页面适配：根布局补上 `TooltipProvider`；组件列表页卡片脱离 `<Card>` 使用 CardHeader，补上 `--card-spacing`。首页、组件列表、组件详情、CLI 指南页均已在深色、浅色和移动端截图检查，`next build` 通过。
+- [ ] （可选）新增一个文档页「从 new-york 迁移」。目前 README 和 CLI 指南页已写明 v1 快照的用法。
 
 完成后合入 main，线上 registry 随之更新。由于有 v1 快照，未迁移的项目不受影响。
 
@@ -150,6 +153,8 @@ pixel-land-fe、pixil-canvas：保持现状。重新开发时，先升级到 Rea
    - 依赖旧间距的布局：Card 的 gap-6/py-6、Dialog 的 p-6、表单行高
    - 以 border 为前提的样式覆盖（新版是 ring）
    - 覆盖 nova 变体类名时，必须使用同一变体
+   - 脱离 <Card> 使用的 CardHeader / CardContent（grep 出来逐个检查），需要补 --card-spacing
+   - 根部是否已有 TooltipProvider
 7. 验证：typecheck + lint + test + build；关键页面在深色和浅色模式下各截图一次，与迁移前对比
 8. 合入 main，删除不再使用的 @radix-ui/* 依赖
 ```

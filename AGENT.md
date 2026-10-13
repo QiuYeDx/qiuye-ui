@@ -6,7 +6,7 @@
 
 - **项目名称**：QiuYe UI
 - **仓库定位**：基于 shadcn/ui registry 机制的自定义 React 组件库站点
-- **技术栈**：Next.js 15 App Router、React 19、TypeScript 5、Tailwind CSS 4、shadcn/ui、Radix UI
+- **技术栈**：Next.js 15 App Router、React 19、TypeScript 5、Tailwind CSS 4、shadcn/ui 4（`radix-nova` 风格，`radix-ui` 单包）
 - **分发方式**：静态站点 + `public/registry/*.json`，通过官方 shadcn CLI 安装组件
 - **AI 辅助能力**：`packages/qiuye-ui-cli` 提供 `@qiuye-ui/mcp`，让 Cursor / Claude / Codex 等客户端读取 registry
 - **包管理器**：pnpm
@@ -57,6 +57,7 @@ qiuye-ui/
 ├── packages/qiuye-ui-cli/       # @qiuye-ui/mcp 子包
 ├── public/registry/             # shadcn CLI 使用的静态 registry
 ├── scripts/update-registry.mjs  # 回填 files[].content 并生成 registry.json
+├── scripts/shadcn-audit.mjs     # 盘点项目 ui 组件与官方源码的差异（迁移风格前使用）
 └── docs/                        # 设计文档、实施记录、经验沉淀
 ```
 

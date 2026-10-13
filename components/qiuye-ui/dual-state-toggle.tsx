@@ -158,11 +158,11 @@ export interface DualStateToggleProps extends Omit<
  *
  * ## 按钮尺寸 & 图标尺寸
  *
- * 按钮尺寸遵循 shadcn/ui Button 规范：
- * - `size="icon"`（默认）→ 36px 方形，icon 自动 size-4（16px）
+ * 按钮尺寸由宿主项目的 shadcn/ui Button 决定（以下为 radix-nova，new-york 各大一档）：
+ * - `size="icon"`（默认）→ 32px 方形，icon 自动 size-4（16px）
  * - `size="icon-xs"` → 24px 方形，icon 自动 size-3（12px）
- * - `size="icon-sm"` → 32px 方形，icon 自动 size-4（16px）
- * - `size="icon-lg"` → 40px 方形，icon 自动 size-4（16px）
+ * - `size="icon-sm"` → 28px 方形，icon 自动 size-4（16px）
+ * - `size="icon-lg"` → 36px 方形，icon 自动 size-4（16px）
  *
  * Icon 尺寸由 Button 通过 `[&_svg:not([class*='size-'])]:size-4` 自动控制，
  * **不需要**在 icon 上手动添加 `h-* w-*`。若需自定义尺寸，使用 `size-*`

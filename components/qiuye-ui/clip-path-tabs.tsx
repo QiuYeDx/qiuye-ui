@@ -72,9 +72,9 @@ export interface ClipPathTabsProps extends Omit<
   smoothCornerSmoothing?: number;
   /**
    * 标签尺寸
-   * - `"sm"`：32px
-   * - `"md"`：34px
-   * - `"lg"`：44px
+   * - `"sm"`：28px
+   * - `"md"`：32px
+   * - `"lg"`：36px
    * @default "md"
    */
   size?: ClipPathTabsSize;
@@ -140,15 +140,15 @@ export interface ClipPathTabsProps extends Omit<
 const sizeStyles: Record<ClipPathTabsSize, { item: string; content: string }> =
   {
     sm: {
-      item: "h-8 px-3 text-xs",
+      item: "h-7 px-2.5 text-xs",
       content: "gap-1.5 [&_svg]:size-3.5",
     },
     md: {
-      item: "h-[34px] px-2.5 text-sm sm:px-4",
+      item: "h-8 px-2.5 text-sm sm:px-3",
       content: "gap-1.5 sm:gap-2 [&_svg]:size-4",
     },
     lg: {
-      item: "h-11 px-3 text-sm sm:px-5",
+      item: "h-9 px-3 text-sm sm:px-4",
       content: "gap-1.5 sm:gap-2 [&_svg]:size-4.5",
     },
   };

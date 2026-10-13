@@ -341,7 +341,8 @@ function ComponentCard({ component, onCopyCommand }: ComponentCardProps) {
     <SmoothCorners
       radius={18}
       smoothing={0.68}
-      className="h-full rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow duration-200 hover:shadow-lg"
+      // 没有使用 <Card>，需要自行提供 radix-nova Card 子组件依赖的 --card-spacing
+      className="flex h-full flex-col gap-(--card-spacing) rounded-lg border bg-card py-(--card-spacing) text-sm text-card-foreground shadow-sm transition-shadow duration-200 [--card-spacing:--spacing(4)] hover:shadow-lg"
     >
       <CardHeader>
         <div className="flex items-start justify-between">

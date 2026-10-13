@@ -837,8 +837,8 @@ function ColorPickerPanel({
 
 const TRIGGER_SIZES = {
   sm: "size-7",
-  md: "size-9",
-  lg: "size-11",
+  md: "size-8",
+  lg: "size-9",
 } as const;
 
 /** ColorPicker 组件的属性 */

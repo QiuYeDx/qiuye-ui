@@ -154,8 +154,7 @@ export const componentRegistry: ComponentRegistry = {
     category: "内容与媒体",
     dependencies: [
       "motion",
-      "@radix-ui/react-dialog",
-      "@radix-ui/react-scroll-area",
+      "radix-ui",
       "lucide-react",
     ],
     files: {
@@ -675,7 +674,7 @@ export const componentRegistry: ComponentRegistry = {
       {
         name: "size",
         type: '"sm" | "md" | "lg"',
-        description: "标签按钮尺寸：sm 高 32px、md 高 34px、lg 高 44px",
+        description: "标签按钮尺寸：sm 高 28px、md 高 32px、lg 高 36px（与 Button 的 sm / default / lg 对齐）",
         required: false,
         default: '"md"',
       },
@@ -2537,7 +2536,7 @@ export const componentRegistry: ComponentRegistry = {
     description:
       "Figma/iOS 风格平滑圆角组件：基于 CSS corner-shape 的渐进增强方案，将 radius + smoothing 转换为补偿半径和 superellipse，并在不支持的浏览器中自动回退到标准 border-radius。",
     category: "视觉与动效",
-    dependencies: ["@qiuyedx/smooth-corners", "@radix-ui/react-slot"],
+    dependencies: ["@qiuyedx/smooth-corners", "radix-ui"],
     files: {
       component: "components/qiuye-ui/smooth-corners.tsx",
       demo: "components/qiuye-ui/demos/smooth-corners-demo.tsx",

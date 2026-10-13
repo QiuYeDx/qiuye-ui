@@ -1,8 +1,10 @@
 "use client";
 
 import * as React from "react";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
-import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
+import {
+  Dialog as DialogPrimitive,
+  ScrollArea as ScrollAreaPrimitive,
+} from "radix-ui";
 import {
   animate,
   motion,

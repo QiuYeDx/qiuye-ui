@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -8,6 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -37,10 +39,13 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 :root {
@@ -126,10 +131,22 @@
   border-radius: var(--sc-r);
 }
 
+/* 与 radix-nova Button 的圆角保持一致：默认 rounded-lg，xs / sm 为 rounded-md。
+   --sc-i 是支持 corner-shape 时的等效半径（约为 --sc-r 的 1.6 倍）。 */
 .button-smooth-corners {
-  --sc-r: 8px;
-  --sc-i: 12.8px;
+  --sc-r: var(--radius-lg);
+  --sc-i: calc(var(--radius-lg) * 1.6);
   --sc-s: superellipse(1.7775);
+}
+
+.button-smooth-corners:is(
+    [data-size="xs"],
+    [data-size="sm"],
+    [data-size="icon-xs"],
+    [data-size="icon-sm"]
+  ):not([data-slot="button-group"] *) {
+  --sc-r: var(--radius-md);
+  --sc-i: calc(var(--radius-md) * 1.6);
 }
 
 @supports (corner-shape: superellipse(2)) {
