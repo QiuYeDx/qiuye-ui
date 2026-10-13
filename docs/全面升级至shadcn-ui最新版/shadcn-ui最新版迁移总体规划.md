@@ -61,6 +61,9 @@
 - **Popover 与 Tooltip 改成了 flex 布局**：nova 的 PopoverContent 是 `flex flex-col gap-2.5`（为 PopoverHeader 设计），TooltipContent 是 `inline-flex items-center gap-1.5`（为快捷键提示设计）。旧代码里 Popover 内容自带 `space-y-*` / `mb-*`，会和 gap 叠加；多行 Tooltip（标题加说明）会被横排成一行。项目没用到 PopoverHeader / Kbd 时，把两者改回块级布局（FusionKit 已这样处理）。
 - **sm 按钮变成 28px、12.8px 字**：`size="sm"` 从 32px/14px 变为 28px/0.8rem。和显式 20px 图标、固定高度容器搭配时比例会失调（FusionKit 底部导航），这类地方改用 `size="default"`（32px/14px）。
 - **后代选择器会漏到嵌套组件**：`.x [data-slot="scroll-area-viewport"] > div > div`、`[&_[data-radix-scroll-area-viewport]]` 这类写法会命中内容里嵌套的 ScrollArea，造成多余的内边距和边框；只想作用于自身时用子选择器 `>`。
+- **下拉菜单宽度等于触发器**：nova 的 DropdownMenuContent 带 `w-(--radix-dropdown-menu-trigger-width)`，由图标按钮（如“…”）打开的菜单会被压到最小宽度，选项折行、看起来像字变大了。去掉这个类，保留 `min-w-32`（官网、博客、React 模板、FusionKit 已修复）。
+- **SelectTrigger 的尺寸是变体类**：`data-[size=sm]:h-7`、`data-[size=sm]:rounded-[…]` 会盖过调用处的 `h-8 rounded-full`，胶囊形触发器会变成圆角矩形。需要自定义高度或圆角时用默认尺寸，或写同一变体（`data-[size=sm]:h-8`）。
+- **按钮不再自带手形指针**：Tailwind 4 默认按钮是箭头指针，旧项目若在 Button 里加过 `cursor-pointer`，重装后会丢失。FusionKit 与 Electron 模板改为在设置里提供“鼠标指针：手形 / 默认”，通过 `html[data-cursor]` 统一控制所有可点击元素。
 - **Dialog 默认变窄、Footer 变样**：nova 的 DialogContent 默认 `sm:max-w-sm`（384px，旧版 `sm:max-w-lg` 是 512px），用默认宽度的弹窗内容可能被挤压；DialogFooter 改为 `-mx-4 -mb-4` 负边距加 `bg-muted/50` 灰底，依赖 `p-4` 的内容区。内容较多的项目可以在本地 dialog 里保留 `sm:max-w-lg`。
 - **Select 默认 `position="item-aligned"`**：下拉菜单会覆盖在触发器上；习惯在下方弹出的项目要把默认值改回 `popper`。
 - **图片贴顶的卡片要加 `py-0 gap-0`**：nova 只在第一个子元素是 `<img>` 时自动去掉顶部内边距；图片外面包了 div、或卡片里只有图片时，需要手动加 `py-0`（必要时加 `gap-0`）。
