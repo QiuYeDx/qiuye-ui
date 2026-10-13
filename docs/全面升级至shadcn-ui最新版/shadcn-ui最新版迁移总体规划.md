@@ -145,8 +145,8 @@
 | --- | --- | --- |
 | 1 | qiuye-electron-template | ✅ 2026-10-14 分支 `chore/shadcn-nova` 已推送，待合入。sonner 改回 `useThemeStore`（模板不用 next-themes）；底部导航按钮用 `size="default"`，设置页滚动区留 `pl-px` |
 | 2 | PotSubOverlay | ✅ 2026-10-14 分支 `chore/shadcn-nova`（基于 v1.3.0）已推送，待合入。重装后还原平滑圆角（`rounded-smooth-*`）、Tooltip 仅键盘聚焦弹出、Button/Switch 的 `cursor-pointer`；`--radius-2xl` 以上保留 Tailwind 默认值以免字幕舞台圆角变化。回归用项目自带的 `POTSUB_FAKE_PLAYER` + `POTSUB_QA_SCRIPT`，新旧两个构建、浅深两色各 28 张截图逐张对比 |
-| 3 | qiuye-nextjs-template | 只有 20 个组件，是 Next 系的母版；card 补丁可以直接用到 travel-guidebook-cx |
-| 4 | travel-guidebook-cx | 复用 Next 模板的补丁 |
+| 3 | qiuye-nextjs-template | ✅ 2026-10-14 分支 `chore/shadcn-nova` 已推送，待合入。差异全是官方后续更新，没有自有定制；nova Card 的 `overflow-hidden` 顺带修好了首页在 390px 宽时被长命令撑出横向滚动的问题。根目录的 dual-state-toggle / theme-transition-toggle 副本改为 re-export |
+| 4 | travel-guidebook-cx | ✅ 2026-10-14 分支 `chore/shadcn-nova` 已推送，待合入。保留 Button / Select 的平滑圆角（内联 `createSmoothCorners` + `SmoothCorners` 包裹）；ClipPathTabs / ResponsiveTabs 只移植了组件库的 nova 变体覆盖，没有跟随尺寸缩小；筛选栏 SelectTrigger 用 `data-[size=default]:h-10`。回归：静态导出 6 个页面 × 桌面/手机 × 浅/深 + 移动端目录弹层 |
 | 5 | animation-web-qiu | 先执行 `git init` 并提交现状，再迁移 |
 
 ### 阶段 4：搁置
