@@ -54,6 +54,8 @@
 - **Card 子组件依赖 `--card-spacing`**：`CardHeader`、`CardContent`、`CardFooter` 的内边距来自 `<Card>` 上定义的 `--card-spacing`。如果脱离 `<Card>` 使用（例如包在自定义容器里），内边距会变成 0，需要在容器上补 `[--card-spacing:--spacing(4)]`，以及 `flex flex-col gap-(--card-spacing) py-(--card-spacing)`。
 - **Tooltip 不再自带 Provider**：需要在应用根部包一层 `TooltipProvider`。
 - **旧版 Card 的内边距覆盖会叠加**：更早的 shadcn Card（v3 时代）间距写在子组件上：CardHeader `p-6`、CardContent `p-6 pt-0`、CardTitle `text-2xl`，调用处常见 `p-4 md:p-6`、`pt-0`、`pb-2`、`pt-6` 之类的覆盖。nova 的间距在 Card 上（`py-4 gap-4`），这些覆盖会叠加，导致卡片变高，应当直接删除。CardTitle 默认变为 `text-base`。
+- **描边画在元素外面**：nova 的 Card、菜单、弹层用 `ring-1`（外侧 box-shadow）代替 `border`。紧贴 ScrollArea 或 `overflow-hidden` 边缘的卡片，那一侧的描边会被裁掉，需要留出至少 1px（例如 `pl-px`）。
+- **主题变量不能自引用**：如果全局 css 里有 `--shadow-md: var(--shadow-md)` 这类写法，变量循环失效；Tailwind 4 把 ring 和 shadow 合成一条 box-shadow，结果菜单、Select、Popover 的描边和阴影会一起消失。迁移前先 grep `--x: var(--x)` 并删除（FusionKit 踩过）。
 - **Dialog 默认变窄、Footer 变样**：nova 的 DialogContent 默认 `sm:max-w-sm`（384px，旧版 `sm:max-w-lg` 是 512px），用默认宽度的弹窗内容可能被挤压；DialogFooter 改为 `-mx-4 -mb-4` 负边距加 `bg-muted/50` 灰底，依赖 `p-4` 的内容区。内容较多的项目可以在本地 dialog 里保留 `sm:max-w-lg`。
 - **Select 默认 `position="item-aligned"`**：下拉菜单会覆盖在触发器上；习惯在下方弹出的项目要把默认值改回 `popper`。
 - **图片贴顶的卡片要加 `py-0 gap-0`**：nova 只在第一个子元素是 `<img>` 时自动去掉顶部内边距；图片外面包了 div、或卡片里只有图片时，需要手动加 `py-0`（必要时加 `gap-0`）。
