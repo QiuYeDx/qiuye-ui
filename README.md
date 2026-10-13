@@ -172,7 +172,7 @@ qiuye-ui/
 1. 在 `components/qiuye-ui/` 中新增或修改组件，并同步 `components/qiuye-ui/demos/` 中的 Demo。
 2. 更新 `lib/component-constants.ts`、`lib/registry.ts` 以及组件详情页中的 Demo 映射。
 3. 在 `public/registry/` 中维护对应的 Registry item。npm 包写入 `dependencies`，shadcn/ui 或 QiuYe UI 组件写入 `registryDependencies`。
-4. 组件源码文件通常不设置 `target`，让 shadcn CLI 根据目标项目的 aliases 决定安装路径。
+4. 不要手写 `files[].target`：`pnpm update-registry` 会把它写成与 `path` 相同的值，让 shadcn CLI 4 保留多文件组件的子目录结构，并自动适配 `src/` 目录项目。
 5. 如果需要 MCP 在远端索引不可用时仍能识别新组件，同步更新 `DEFAULT_COMPONENT_NAMES`。
 6. 运行 Registry 生成、lint 和构建检查。
 

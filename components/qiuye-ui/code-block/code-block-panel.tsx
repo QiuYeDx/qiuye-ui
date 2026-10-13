@@ -118,6 +118,20 @@ function getLanguageDisplayName(language: string): string | null {
 // CodeBlockPanel 组件
 // ============================================
 
+/** CodeBlockPanel 的界面文案 */
+export interface CodeBlockPanelLabels {
+  /** 复制按钮的提示与无障碍标签（未复制状态） */
+  copy: string;
+  /** 复制成功后的无障碍标签 */
+  copied: string;
+}
+
+/** CodeBlockPanel 默认界面文案 */
+export const DEFAULT_CODE_BLOCK_PANEL_LABELS: CodeBlockPanelLabels = {
+  copy: "复制到剪贴板",
+  copied: "已复制",
+};
+
 export interface CodeBlockPanelProps {
   /** 文件名标签（显示在面板顶部左侧） */
   filename?: string;
@@ -151,6 +165,8 @@ export interface CodeBlockPanelProps {
    * 可选值: "qiuvision" | "github" | "one" | "dracula" | "nord" | "vitesse" | "monokai"
    */
   colorTheme?: CodeBlockColorThemeName;
+  /** 界面文案（用于国际化），未传入的字段使用 `DEFAULT_CODE_BLOCK_PANEL_LABELS` */
+  labels?: Partial<CodeBlockPanelLabels>;
   /** 子元素（通常为 CodeBlock 组件） */
   children: React.ReactNode;
   /** 额外的 CSS 类名 */
@@ -200,10 +216,12 @@ export function CodeBlockPanel({
   showCopyButton = true,
   isDark = true,
   colorTheme = "github",
+  labels: labelsProp,
   children,
   className,
 }: CodeBlockPanelProps) {
   const [copied, setCopied] = useState(false);
+  const labels = { ...DEFAULT_CODE_BLOCK_PANEL_LABELS, ...labelsProp };
 
   const handleCopyToggle = useCallback(
     async (newActive: boolean) => {
@@ -282,9 +300,9 @@ export function CodeBlockPanel({
                 variant="ghost"
                 size="icon"
                 className="cbp-copy-btn size-7!"
-                title="复制到剪贴板"
-                activeLabel="已复制"
-                inactiveLabel="复制到剪贴板"
+                title={labels.copy}
+                activeLabel={labels.copied}
+                inactiveLabel={labels.copy}
                 transitionDuration={0.2}
               />
             )}
@@ -296,8 +314,8 @@ export function CodeBlockPanel({
         </div>
       </div>
 
-      {/* Panel 配色样式（通过 CSS 变量驱动，自动去重） */}
-      <style jsx global>{`
+      {/* Panel 配色样式（通过 CSS 变量驱动）。href + precedence 让 React 19 把它提升到 <head> 并按 href 去重 */}
+      <style href="qiuye-code-block-panel" precedence="default">{`
         .cbp-filename {
           color: var(--cbp-filename);
         }

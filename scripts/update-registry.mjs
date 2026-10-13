@@ -10,6 +10,7 @@ import path from "path";
  *
  * 说明：
  * - 更新每个 registry item 的 files[].content
+ * - 为每个文件写入与 path 相同的 files[].target（无需手写）
  * - 同步生成 registry.json（官方 registry 清单）
  *
  * 示例：
@@ -111,6 +112,16 @@ async function tryReadFileByCandidates(base, relPath) {
   return { found: false, content: null, resolved: null };
 }
 
+/** 写入与 path 相同的 target，并保持 path / type / target 在前、content 在末尾的字段顺序 */
+function withTarget(file) {
+  const { path: filePath, type, content, ...rest } = file;
+  // 先占位 target 让它排在 type 之后，再用 rest 补其余字段，最后覆盖 rest 里旧的 target
+  const out = { path: filePath, type, target: filePath, ...rest };
+  out.target = filePath;
+  if (content !== undefined) out.content = content;
+  return out;
+}
+
 function isRegistryItemLike(obj) {
   return (
     obj &&
@@ -152,22 +163,36 @@ async function processRegistryJson(jsonPath) {
       continue;
     }
 
+    // target 始终与 path 保持一致：shadcn CLI 4 遇到无 target 的文件会按 type
+    // 拍平到 components/ 等目录根部，导致多文件组件的 index.ts / types.ts 互相覆盖、
+    // 相对导入失效。写上 target 后 CLI 会保留子目录，并自动适配 src/ 目录。
+    const targetChanged = f.target !== rel;
+    if (targetChanged) {
+      changed = true;
+      details.push(`- ✅ files[${i}] 同步 target：${rel}`);
+    }
+
     const attempt = await tryReadFileByCandidates(COMPONENT_BASE, rel);
     if (!attempt.found) {
       details.push(`- ❌ files[${i}] 未找到源码：${rel}`);
+      if (targetChanged && !DRY_RUN) {
+        data.files[i] = withTarget(f);
+      }
       continue;
     }
 
-    if (f.content !== attempt.content) {
+    const contentChanged = f.content !== attempt.content;
+    if (contentChanged) {
       changed = true;
       details.push(
         `- ✅ files[${i}] 更新 content：${rel}  ←  ${path.relative(process.cwd(), attempt.resolved)}`
       );
-      if (!DRY_RUN) {
-        data.files[i] = { ...f, content: attempt.content };
-      }
     } else {
       details.push(`- ℹ️ files[${i}] 内容无变化：${rel}`);
+    }
+
+    if ((contentChanged || targetChanged) && !DRY_RUN) {
+      data.files[i] = withTarget({ ...f, content: attempt.content });
     }
   }
 

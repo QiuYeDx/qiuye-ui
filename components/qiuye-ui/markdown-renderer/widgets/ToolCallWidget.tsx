@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react";
 import { Terminal, CheckCircle, Loader2, XCircle } from "lucide-react";
 import type {
   MarkdownWidgetComponentProps,
   MarkdownWidgetDefinition,
 } from "../markdown-types";
+import { useMarkdownLabels } from "../markdown-labels";
 
 interface ToolCallProps {
   name: string;
@@ -19,26 +19,27 @@ function ToolCallWidgetComponent({
   props,
 }: MarkdownWidgetComponentProps<ToolCallProps>) {
   const { name, status = "success", input, output, error } = props;
+  const { widgets: labels } = useMarkdownLabels();
 
   const statusConfig = {
     pending: {
       icon: <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />,
-      label: "等待中",
+      label: labels.toolCallStatusPending,
       borderColor: "border-border/60",
     },
     running: {
       icon: <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />,
-      label: "执行中",
+      label: labels.toolCallStatusRunning,
       borderColor: "border-blue-500/30",
     },
     success: {
       icon: <CheckCircle className="h-4 w-4 text-green-500" />,
-      label: "完成",
+      label: labels.toolCallStatusSuccess,
       borderColor: "border-green-500/30",
     },
     error: {
       icon: <XCircle className="h-4 w-4 text-destructive" />,
-      label: "失败",
+      label: labels.toolCallStatusError,
       borderColor: "border-destructive/30",
     },
   };
@@ -64,7 +65,9 @@ function ToolCallWidgetComponent({
         <div className="px-3 py-2 space-y-1.5 text-xs">
           {input && Object.keys(input).length > 0 && (
             <div>
-              <span className="text-muted-foreground/70">输入: </span>
+              <span className="text-muted-foreground/70">
+                {labels.toolCallInput}
+              </span>
               <code className="text-foreground/80 font-mono">
                 {JSON.stringify(input, null, 0)}
               </code>
@@ -72,7 +75,9 @@ function ToolCallWidgetComponent({
           )}
           {output && Object.keys(output).length > 0 && (
             <div>
-              <span className="text-muted-foreground/70">输出: </span>
+              <span className="text-muted-foreground/70">
+                {labels.toolCallOutput}
+              </span>
               <code className="text-foreground/80 font-mono">
                 {JSON.stringify(output, null, 0)}
               </code>
@@ -80,7 +85,7 @@ function ToolCallWidgetComponent({
           )}
           {error && (
             <div className="text-destructive">
-              <span className="text-destructive/70">错误: </span>
+              <span className="text-destructive/70">{labels.toolCallError}</span>
               {error}
             </div>
           )}

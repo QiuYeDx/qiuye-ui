@@ -95,8 +95,9 @@ description: QiuYe UI 组件库的自定义组件新增、修改、Registry 集�
 
 注意：
 
-- **不要**手写 `files[].content`（由脚本生成）
+- **不要**手写 `files[].content` 和 `files[].target`（由脚本生成；`target` 与 `path` 相同，shadcn CLI 4 缺少它会把多文件组件拍平到 `components/` 根目录）
 - 多文件组件：所有文件都加入 `files[]`
+- 同一个 item 内不同目录的文件不要同名（如 `components/qiuye-ui/foo.tsx` 与 `lib/foo.ts`），CLI 会把 `@/lib/foo` 改写成组件自身路径
 - `public/registry/registry.json` **勿手改**
 
 ### Step 6.1：依赖另一个 QiuYe UI 组件时的写法（重点）
@@ -164,6 +165,8 @@ pnpm update-registry
 - 当依赖 `@/components/qiuye-ui/*` 时，`registryDependencies` 必须使用 `@qiuye-ui/<id>`（不要写裸名称）
 - 组件 import 的本地文件（`@/hooks/*`、`@/lib/*` 非 utils）必须加入 `files[]`
 - `@/components/ui/*` 和 `@/lib/utils` 的导入**不需要**加入 `files[]`
+- 组件源码必须能在 `shadcn init -t vite` 的严格 TS 项目中直接编译：不用 styled-jsx、`@next/next` 的 eslint 注释，不留未使用的 `import React`，`process.env` 按 AGENT.md「安装到用户项目后的兼容性」的写法处理
+- 界面文案通过 `labels` 属性开放覆盖，并导出 `DEFAULT_XXX_LABELS`
 
 ## 可选：MCP Server 兜底列表
 

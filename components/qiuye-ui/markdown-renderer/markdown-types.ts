@@ -6,6 +6,10 @@ import type {
   CodeBlockThemeConfig,
 } from "@/components/qiuye-ui/code-block";
 import type { PrismTheme } from "prism-react-renderer";
+import type {
+  MarkdownRendererLabels,
+  MarkdownRendererLabelsInput,
+} from "./markdown-labels";
 
 // ============================================
 // 渲染模式与密度
@@ -43,6 +47,11 @@ export interface MarkdownRendererCoreProps {
   enableHeadingIds?: boolean;
   /** 是否启用原始 HTML */
   enableRawHtml?: boolean;
+  /**
+   * 界面文案（用于国际化），按 mermaid / widgets / codeBlock / codeBlockPanel / imageViewer 分组，
+   * 每组都可以只传部分字段。和 `components` 一样，建议传入引用稳定的对象（模块常量或 useMemo）。
+   */
+  labels?: MarkdownRendererLabelsInput;
 }
 
 /** Markdown 代码块渲染配置 */
@@ -192,4 +201,6 @@ export interface MarkdownPresetComponentContext {
   widgetContext?: MarkdownWidgetContext;
   /** 安全策略 */
   securityProfile: MarkdownSecurityProfile;
+  /** 合并默认值后的界面文案 */
+  labels: MarkdownRendererLabels;
 }

@@ -115,6 +115,20 @@ function parseHighlightLines(input: number[] | string): Set<number> {
  */
 export type CodeBlockDisplayMode = "collapse" | "scroll" | "auto-height";
 
+/** CodeBlock 的界面文案 */
+export interface CodeBlockLabels {
+  /** 折叠模式下展开按钮的文案，参数为代码总行数 */
+  expand: (lineCount: number) => string;
+  /** 展开后悬浮收起按钮的无障碍标签 */
+  collapse: string;
+}
+
+/** CodeBlock 默认界面文案 */
+export const DEFAULT_CODE_BLOCK_LABELS: CodeBlockLabels = {
+  expand: (lineCount) => `展开全部 ${lineCount} 行`,
+  collapse: "收起代码",
+};
+
 export interface CodeBlockProps {
   /** 代码内容 */
   children: string;
@@ -188,6 +202,8 @@ export interface CodeBlockProps {
    * - `string`：逗号分隔的行号或范围，如 `"1,3,5-10,15"`
    */
   highlightLines?: number[] | string;
+  /** 界面文案（用于国际化），未传入的字段使用 `DEFAULT_CODE_BLOCK_LABELS` */
+  labels?: Partial<CodeBlockLabels>;
   /** 额外的 CSS 类名 */
   className?: string;
 }
@@ -240,8 +256,10 @@ export function CodeBlock({
   noShadow = true,
   diff = false,
   highlightLines,
+  labels: labelsProp,
   className = "",
 }: CodeBlockProps) {
+  const labels = { ...DEFAULT_CODE_BLOCK_LABELS, ...labelsProp };
   const code = children.trim();
   const rawLines = useMemo(() => code.split("\n"), [code]);
   const lineCount = rawLines.length;
@@ -527,7 +545,7 @@ export function CodeBlock({
                   onClick={() => setIsExpanded(true)}
                 >
                   <ChevronDown className="h-3.5 w-3.5 -ml-1" />
-                  展开全部 {lineCount} 行
+                  {labels.expand(lineCount)}
                 </button>
               </div>
             )}
@@ -540,6 +558,8 @@ export function CodeBlock({
                 key="collapse-btn"
                 className="collapsible-code-collapse-btn"
                 onClick={handleCollapse}
+                aria-label={labels.collapse}
+                title={labels.collapse}
               >
                 <ChevronUp className="h-3.5 w-3.5" />
               </button>
@@ -580,14 +600,15 @@ export function CodeBlock({
 }
 
 // ============================================
-// 样式组件（styled-jsx global，自动去重）
+// 样式组件（React 19 <style href precedence>：提升到 <head> 并按 href
+// 去重，不依赖 Next.js styled-jsx，Vite 等环境同样可用）
 // 所有配色通过 CSS 自定义属性（--cb-xxx）驱动，
 // 无需 .dark 前缀重复，同一份 CSS 适配任意主题。
 // ============================================
 
 function CodeBlockStyles() {
   return (
-    <style jsx global>{`
+    <style href="qiuye-code-block" precedence="default">{`
       /* ============================================
          代码块基础样式
          ============================================ */

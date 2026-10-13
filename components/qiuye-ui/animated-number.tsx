@@ -8,7 +8,7 @@ import {
   usePresenceData,
 } from "motion/react";
 import { cn } from "@/lib/utils";
-import { getNumberTokens, type NumberToken } from "@/lib/animated-number";
+import { getNumberTokens, type NumberToken } from "@/lib/animated-number-tokens";
 
 /** AnimatedNumber 的属性；同时支持原生 span 的属性及 ref。 */
 export interface AnimatedNumberProps extends Omit<

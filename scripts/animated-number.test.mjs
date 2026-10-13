@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import ts from "typescript";
-const code = ts.transpileModule(fs.readFileSync(new URL("../lib/animated-number.ts", import.meta.url), "utf8"), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+const code = ts.transpileModule(fs.readFileSync(new URL("../lib/animated-number-tokens.ts", import.meta.url), "utf8"), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 const { getNumberTokens } = await import("data:text/javascript;base64," + Buffer.from(code).toString("base64"));
 test("年份只改变末位字符，9→10 保留个位身份", () => {
   const a = getNumberTokens(2025).tokens;

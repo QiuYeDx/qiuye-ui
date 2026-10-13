@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import type {
   MarkdownWidgetRegistry,
   MarkdownWidgetContext,
@@ -8,6 +7,7 @@ import type {
 import type { MarkdownWidgetInvocation } from "@/lib/markdown/parse-widget-fence";
 import { WidgetErrorBoundary } from "./widgets/WidgetErrorBoundary";
 import { UnknownWidget } from "./widgets/UnknownWidget";
+import { useMarkdownLabels } from "./markdown-labels";
 
 interface MarkdownWidgetRendererProps {
   invocation: MarkdownWidgetInvocation;
@@ -21,6 +21,7 @@ export function MarkdownWidgetRenderer({
   context,
 }: MarkdownWidgetRendererProps) {
   const { id, type, raw, propsRaw } = invocation;
+  const { widgets: labels } = useMarkdownLabels();
 
   const definition = registry[type];
   if (!definition) {
@@ -33,7 +34,7 @@ export function MarkdownWidgetRenderer({
         type={type}
         id={id}
         raw={raw}
-        reason="JSON 解析失败"
+        reason={labels.invalidJson}
       />
     );
   }
@@ -65,7 +66,11 @@ export function MarkdownWidgetRenderer({
   const WidgetComponent = definition.component;
 
   return (
-    <WidgetErrorBoundary widgetId={id} widgetType={type}>
+    <WidgetErrorBoundary
+      widgetId={id}
+      widgetType={type}
+      errorLabel={labels.renderError}
+    >
       <div className="qv-widget my-3">
         <WidgetComponent
           id={id}

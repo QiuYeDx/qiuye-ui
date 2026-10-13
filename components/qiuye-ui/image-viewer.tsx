@@ -161,7 +161,28 @@ interface ImageViewerProps extends BaseImageProps {
    * @default false
    */
   selectable?: boolean;
+  /**
+   * 界面文案（用于国际化），未传入的字段使用 `DEFAULT_IMAGE_VIEWER_LABELS`
+   */
+  labels?: Partial<ImageViewerLabels>;
 }
+
+/** ImageViewer 的界面文案 */
+export interface ImageViewerLabels {
+  /** 未提供图片地址时的占位文案，参数为图片的 `alt` */
+  emptySource: (alt: string | undefined) => string;
+  /** 图片加载失败时的提示 */
+  loadError: string;
+  /** 灯箱对话框的无障碍标签，参数为图片的 `alt` */
+  lightbox: (alt: string | undefined) => string;
+}
+
+/** ImageViewer 默认界面文案 */
+export const DEFAULT_IMAGE_VIEWER_LABELS: ImageViewerLabels = {
+  emptySource: (alt) => (alt ? `图片占位: ${alt}` : "图片链接为空"),
+  loadError: "图片加载失败",
+  lightbox: (alt) => (alt ? `查看图片：${alt}` : "查看图片"),
+};
 
 const DEFAULT_PADDING = 32;
 const MIN_LIGHTBOX_SCALE = 1;
@@ -262,11 +283,13 @@ export function ImageViewer({
   hoverBounce,
   hoverDuration = 0.65,
   selectable = false,
+  labels: labelsProp,
   loading = "lazy",
   onLoad,
   onError,
   ...props
 }: ImageViewerProps) {
+  const labels = { ...DEFAULT_IMAGE_VIEWER_LABELS, ...labelsProp };
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
@@ -736,7 +759,7 @@ export function ImageViewer({
             wrapperClassName
           )}
         >
-          {alt ? `图片占位: ${alt}` : "图片链接为空"}
+          {labels.emptySource(alt)}
         </span>
       </SmoothCorners>
     );
@@ -782,7 +805,7 @@ export function ImageViewer({
         >
           <ImageIcon className="h-12 w-12 text-muted-foreground/40 mb-3" />
           <span className="text-sm font-medium text-muted-foreground/70 mb-1 block">
-            图片加载失败
+            {labels.loadError}
           </span>
           {alt && (
             <span className="text-xs text-muted-foreground/50 block">{alt}</span>
@@ -954,7 +977,7 @@ export function ImageViewer({
                 className="fixed inset-0 z-50 flex items-center justify-center select-none"
                 role="dialog"
                 aria-modal="true"
-                aria-label={alt ? `查看图片：${alt}` : "查看图片"}
+                aria-label={labels.lightbox(alt)}
                 transition={{ duration: 0.2, ease: "easeInOut" }}
               >
                 <motion.div

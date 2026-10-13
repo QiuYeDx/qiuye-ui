@@ -454,7 +454,8 @@ export const ClipPathTabs = React.forwardRef<
           ref={listRef}
           aria-label={ariaLabel}
           className={cn(
-            "relative grid h-auto max-w-full gap-1 rounded-none bg-transparent p-0 text-current",
+            // group-data-horizontal/tabs:h-auto 覆盖 radix-nova TabsList 的变体高度 h-8
+            "relative grid h-auto max-w-full gap-1 rounded-none bg-transparent p-0 text-current group-data-horizontal/tabs:h-auto",
             fullWidth ? "w-full" : "w-fit",
             listClassName,
           )}
@@ -481,6 +482,8 @@ export const ClipPathTabs = React.forwardRef<
                   "relative min-w-0 flex-none cursor-pointer border-transparent bg-transparent font-medium shadow-none outline-offset-2 transition-none",
                   "text-[var(--clip-path-tabs-inactive-foreground)] data-[state=active]:bg-transparent data-[state=active]:text-[var(--clip-path-tabs-inactive-foreground)] data-[state=active]:shadow-none",
                   "dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent",
+                  // 覆盖 radix-nova TabsTrigger 通过 data-active / group 变体设置的选中态阴影与背景
+                  "group-data-[variant=default]/tabs-list:data-active:shadow-none data-active:bg-transparent dark:data-active:bg-transparent dark:data-active:border-transparent",
                   "focus-visible:outline-2 focus-visible:outline-ring focus-visible:ring-0",
                   shape === "pill" ? "rounded-full" : "rounded-lg",
                   styles.item,

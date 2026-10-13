@@ -14,12 +14,14 @@
       "registryDependencies": [],
       "files": [
         {
+          "path": "components/qiuye-ui/animated-number.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/animated-number.tsx"
+          "target": "components/qiuye-ui/animated-number.tsx"
         },
         {
+          "path": "lib/animated-number-tokens.ts",
           "type": "registry:lib",
-          "path": "lib/animated-number.ts"
+          "target": "lib/animated-number-tokens.ts"
         }
       ],
       "description": "按数位独立过渡的动态数字，支持可选模糊、平滑宽度变化和 Intl 格式化。"
@@ -36,8 +38,9 @@
       ],
       "files": [
         {
+          "path": "components/qiuye-ui/clip-path-tabs.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/clip-path-tabs.tsx"
+          "target": "components/qiuye-ui/clip-path-tabs.tsx"
         }
       ],
       "description": "通过 clip-path 平滑切换背景与文本颜色的标签按钮组，默认使用无间隙的连续背景，也支持保留间隙的分段过渡。"
@@ -58,20 +61,24 @@
       ],
       "files": [
         {
+          "path": "components/qiuye-ui/code-block/code-block-panel.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/code-block/code-block-panel.tsx"
+          "target": "components/qiuye-ui/code-block/code-block-panel.tsx"
         },
         {
+          "path": "components/qiuye-ui/code-block/code-block-root.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/code-block/code-block-root.tsx"
+          "target": "components/qiuye-ui/code-block/code-block-root.tsx"
         },
         {
+          "path": "components/qiuye-ui/code-block/code-block-themes.ts",
           "type": "registry:component",
-          "path": "components/qiuye-ui/code-block/code-block-themes.ts"
+          "target": "components/qiuye-ui/code-block/code-block-themes.ts"
         },
         {
+          "path": "components/qiuye-ui/code-block/index.ts",
           "type": "registry:component",
-          "path": "components/qiuye-ui/code-block/index.ts"
+          "target": "components/qiuye-ui/code-block/index.ts"
         }
       ]
     },
@@ -88,8 +95,9 @@
       ],
       "files": [
         {
+          "path": "components/qiuye-ui/color-picker.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/color-picker.tsx"
+          "target": "components/qiuye-ui/color-picker.tsx"
         }
       ]
     },
@@ -102,8 +110,9 @@
       "registryDependencies": [],
       "files": [
         {
+          "path": "components/qiuye-ui/dot-glass.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/dot-glass.tsx"
+          "target": "components/qiuye-ui/dot-glass.tsx"
         }
       ]
     },
@@ -121,8 +130,9 @@
       ],
       "files": [
         {
+          "path": "components/qiuye-ui/dual-state-toggle.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/dual-state-toggle.tsx"
+          "target": "components/qiuye-ui/dual-state-toggle.tsx"
         }
       ]
     },
@@ -142,8 +152,9 @@
       ],
       "files": [
         {
+          "path": "components/qiuye-ui/expandable-card.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/expandable-card.tsx"
+          "target": "components/qiuye-ui/expandable-card.tsx"
         }
       ],
       "description": "App Store 风格的展开卡片：从原位置连续放大为居中详情浮层，支持分层视差封面、无重排滚动与无缝阴影交接。"
@@ -162,16 +173,19 @@
       ],
       "files": [
         {
+          "path": "components/qiuye-ui/image-viewer.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/image-viewer.tsx"
+          "target": "components/qiuye-ui/image-viewer.tsx"
         },
         {
+          "path": "hooks/use-hover-support.ts",
           "type": "registry:hook",
-          "path": "hooks/use-hover-support.ts"
+          "target": "hooks/use-hover-support.ts"
         },
         {
+          "path": "hooks/use-prevent-scroll.ts",
           "type": "registry:hook",
-          "path": "hooks/use-prevent-scroll.ts"
+          "target": "hooks/use-prevent-scroll.ts"
         }
       ]
     },
@@ -198,100 +212,129 @@
       ],
       "files": [
         {
+          "path": "components/qiuye-ui/markdown-renderer/index.ts",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/index.ts"
+          "target": "components/qiuye-ui/markdown-renderer/index.ts"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/markdown-renderer.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/markdown-renderer.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/markdown-renderer.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/markdown-renderer.module.css",
           "type": "registry:style",
-          "path": "components/qiuye-ui/markdown-renderer/markdown-renderer.module.css"
+          "target": "components/qiuye-ui/markdown-renderer/markdown-renderer.module.css"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/BlogMarkdownRenderer.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/BlogMarkdownRenderer.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/BlogMarkdownRenderer.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/ChatMarkdownRenderer.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/ChatMarkdownRenderer.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/ChatMarkdownRenderer.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/MarkdownRendererCore.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/MarkdownRendererCore.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/MarkdownRendererCore.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/MarkdownTableContainer.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/MarkdownTableContainer.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/MarkdownTableContainer.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/MarkdownWidgetRenderer.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/MarkdownWidgetRenderer.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/MarkdownWidgetRenderer.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/blocks/MermaidBlock.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/blocks/MermaidBlock.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/blocks/MermaidBlock.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/presets/blog-preset.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/presets/blog-preset.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/presets/blog-preset.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/presets/chat-preset.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/presets/chat-preset.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/presets/chat-preset.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/widgets/ArtifactWidget.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/widgets/ArtifactWidget.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/widgets/ArtifactWidget.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/widgets/ReferenceCardWidget.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/widgets/ReferenceCardWidget.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/widgets/ReferenceCardWidget.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/widgets/ToolCallWidget.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/widgets/ToolCallWidget.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/widgets/ToolCallWidget.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/widgets/UnknownWidget.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/widgets/UnknownWidget.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/widgets/UnknownWidget.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/widgets/WidgetErrorBoundary.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/widgets/WidgetErrorBoundary.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/widgets/WidgetErrorBoundary.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/widgets/builtin-registry.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/markdown-renderer/widgets/builtin-registry.tsx"
+          "target": "components/qiuye-ui/markdown-renderer/widgets/builtin-registry.tsx"
         },
         {
+          "path": "components/qiuye-ui/markdown-renderer/markdown-labels.ts",
+          "type": "registry:component",
+          "target": "components/qiuye-ui/markdown-renderer/markdown-labels.ts"
+        },
+        {
+          "path": "components/qiuye-ui/markdown-renderer/markdown-types.ts",
           "type": "registry:lib",
-          "path": "components/qiuye-ui/markdown-renderer/markdown-types.ts"
+          "target": "components/qiuye-ui/markdown-renderer/markdown-types.ts"
         },
         {
+          "path": "lib/heading-ids.ts",
           "type": "registry:lib",
-          "path": "lib/heading-ids.ts"
+          "target": "lib/heading-ids.ts"
         },
         {
+          "path": "lib/markdown/link-policy.ts",
           "type": "registry:lib",
-          "path": "lib/markdown/link-policy.ts"
+          "target": "lib/markdown/link-policy.ts"
         },
         {
+          "path": "lib/markdown/parse-code-block-meta.ts",
           "type": "registry:lib",
-          "path": "lib/markdown/parse-code-block-meta.ts"
+          "target": "lib/markdown/parse-code-block-meta.ts"
         },
         {
+          "path": "lib/markdown/parse-widget-fence.ts",
           "type": "registry:lib",
-          "path": "lib/markdown/parse-widget-fence.ts"
+          "target": "lib/markdown/parse-widget-fence.ts"
         },
         {
+          "path": "lib/markdown/remark-code-meta.ts",
           "type": "registry:lib",
-          "path": "lib/markdown/remark-code-meta.ts"
+          "target": "lib/markdown/remark-code-meta.ts"
         },
         {
+          "path": "lib/markdown/sanitize-url.ts",
           "type": "registry:lib",
-          "path": "lib/markdown/sanitize-url.ts"
+          "target": "lib/markdown/sanitize-url.ts"
         }
       ]
     },
@@ -304,32 +347,39 @@
       "registryDependencies": [],
       "files": [
         {
+          "path": "components/qiuye-ui/matrix-effect/index.ts",
           "type": "registry:component",
-          "path": "components/qiuye-ui/matrix-effect/index.ts"
+          "target": "components/qiuye-ui/matrix-effect/index.ts"
         },
         {
+          "path": "components/qiuye-ui/matrix-effect/matrix-effect.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/matrix-effect/matrix-effect.tsx"
+          "target": "components/qiuye-ui/matrix-effect/matrix-effect.tsx"
         },
         {
+          "path": "components/qiuye-ui/matrix-effect/sources.ts",
           "type": "registry:component",
-          "path": "components/qiuye-ui/matrix-effect/sources.ts"
+          "target": "components/qiuye-ui/matrix-effect/sources.ts"
         },
         {
+          "path": "components/qiuye-ui/matrix-effect/transforms.ts",
           "type": "registry:component",
-          "path": "components/qiuye-ui/matrix-effect/transforms.ts"
+          "target": "components/qiuye-ui/matrix-effect/transforms.ts"
         },
         {
+          "path": "components/qiuye-ui/matrix-effect/renderers.ts",
           "type": "registry:component",
-          "path": "components/qiuye-ui/matrix-effect/renderers.ts"
+          "target": "components/qiuye-ui/matrix-effect/renderers.ts"
         },
         {
+          "path": "components/qiuye-ui/matrix-effect/presets.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/matrix-effect/presets.tsx"
+          "target": "components/qiuye-ui/matrix-effect/presets.tsx"
         },
         {
+          "path": "components/qiuye-ui/matrix-effect/types.ts",
           "type": "registry:component",
-          "path": "components/qiuye-ui/matrix-effect/types.ts"
+          "target": "components/qiuye-ui/matrix-effect/types.ts"
         }
       ]
     },
@@ -351,8 +401,9 @@
       ],
       "files": [
         {
+          "path": "components/qiuye-ui/responsive-tabs.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/responsive-tabs.tsx"
+          "target": "components/qiuye-ui/responsive-tabs.tsx"
         }
       ]
     },
@@ -362,15 +413,18 @@
       "title": "ScrollableDialog",
       "author": "QiuYeDx <me@qiuyedx.com>",
       "dependencies": [
-        "react"
+        "react",
+        "motion"
       ],
       "registryDependencies": [
-        "dialog"
+        "dialog",
+        "scroll-area"
       ],
       "files": [
         {
+          "path": "components/qiuye-ui/scrollable-dialog.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/scrollable-dialog.tsx"
+          "target": "components/qiuye-ui/scrollable-dialog.tsx"
         }
       ]
     },
@@ -385,8 +439,9 @@
       "registryDependencies": [],
       "files": [
         {
+          "path": "components/qiuye-ui/segmented-control.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/segmented-control.tsx"
+          "target": "components/qiuye-ui/segmented-control.tsx"
         }
       ],
       "description": "ChatGPT 风格的分段单选控件，支持内嵌与悬浮两种风格、Motion spring 滑块过渡及中、小两档尺寸。"
@@ -403,8 +458,9 @@
       "registryDependencies": [],
       "files": [
         {
+          "path": "components/qiuye-ui/smooth-corners.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/smooth-corners.tsx"
+          "target": "components/qiuye-ui/smooth-corners.tsx"
         }
       ],
       "description": "Figma/iOS 风格平滑圆角组件，基于 CSS corner-shape 渐进增强并回退到标准 border-radius。"
@@ -425,8 +481,9 @@
       ],
       "files": [
         {
+          "path": "components/qiuye-ui/theme-transition-toggle.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/theme-transition-toggle.tsx"
+          "target": "components/qiuye-ui/theme-transition-toggle.tsx"
         }
       ]
     },
@@ -445,8 +502,9 @@
       ],
       "files": [
         {
+          "path": "components/qiuye-ui/tour.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/tour.tsx"
+          "target": "components/qiuye-ui/tour.tsx"
         }
       ]
     },
@@ -461,8 +519,9 @@
       "registryDependencies": [],
       "files": [
         {
+          "path": "components/qiuye-ui/typewriter.tsx",
           "type": "registry:component",
-          "path": "components/qiuye-ui/typewriter.tsx"
+          "target": "components/qiuye-ui/typewriter.tsx"
         }
       ]
     }

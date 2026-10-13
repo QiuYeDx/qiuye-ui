@@ -17,6 +17,10 @@ import type {
   MarkdownPresetConfig,
   MarkdownPresetComponentContext,
 } from "./markdown-types";
+import {
+  MarkdownLabelsContext,
+  resolveMarkdownRendererLabels,
+} from "./markdown-labels";
 import styles from "./markdown-renderer.module.css";
 
 function getSyntaxColor(
@@ -117,6 +121,7 @@ export function MarkdownRendererCore({
   codeBlock: codeBlockOverride,
   enableHeadingIds: enableHeadingIdsOverride,
   enableRawHtml: enableRawHtmlOverride,
+  labels: labelsOverride,
   preset,
 }: MarkdownRendererCoreInternalProps) {
   const { resolvedTheme } = useTheme();
@@ -131,6 +136,10 @@ export function MarkdownRendererCore({
 
   const enableHeadingIds = enableHeadingIdsOverride ?? preset.enableHeadingIds;
   const enableRawHtml = enableRawHtmlOverride ?? preset.enableRawHtml;
+  const labels = useMemo(
+    () => resolveMarkdownRendererLabels(labelsOverride),
+    [labelsOverride],
+  );
   const codeBlock = useMemo(() => {
     const overrideEntries = Object.entries(codeBlockOverride ?? {}).filter(
       ([, value]) => value !== undefined,
@@ -243,8 +252,16 @@ export function MarkdownRendererCore({
       widgetRegistry,
       widgetContext,
       securityProfile: preset.securityProfile,
+      labels,
     }),
-    [getHeadingId, codeBlock, widgetRegistry, widgetContext, preset.securityProfile],
+    [
+      getHeadingId,
+      codeBlock,
+      widgetRegistry,
+      widgetContext,
+      preset.securityProfile,
+      labels,
+    ],
   );
 
   const presetComponents = useMemo(
@@ -272,13 +289,15 @@ export function MarkdownRendererCore({
       className={`${styles.root} ${modeClass} min-w-0 max-w-full ${className}`}
       style={markdownThemeStyle}
     >
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkCodeMeta]}
-        rehypePlugins={rehypePlugins}
-        components={components}
-      >
-        {content}
-      </ReactMarkdown>
+      <MarkdownLabelsContext.Provider value={labels}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkCodeMeta]}
+          rehypePlugins={rehypePlugins}
+          components={components}
+        >
+          {content}
+        </ReactMarkdown>
+      </MarkdownLabelsContext.Provider>
     </div>
   );
 }

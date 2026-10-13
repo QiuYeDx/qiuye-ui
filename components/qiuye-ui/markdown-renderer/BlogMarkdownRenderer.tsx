@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { MarkdownRendererCore } from "./MarkdownRendererCore";
 import { blogPreset } from "./presets/blog-preset";
 import type {
@@ -8,6 +7,7 @@ import type {
   MarkdownWidgetRegistry,
   MarkdownWidgetContext,
 } from "./markdown-types";
+import type { MarkdownRendererLabelsInput } from "./markdown-labels";
 import type { Components } from "react-markdown";
 import type {
   CodeBlockDisplayMode,
@@ -42,6 +42,8 @@ export interface BlogMarkdownRendererProps {
   widgetRegistry?: MarkdownWidgetRegistry;
   /** Widget 上下文 */
   widgetContext?: MarkdownWidgetContext;
+  /** 界面文案（用于国际化），每个分组都可以只传部分字段 */
+  labels?: MarkdownRendererLabelsInput;
 }
 
 /**
@@ -71,6 +73,7 @@ export function BlogMarkdownRenderer({
   components,
   widgetRegistry,
   widgetContext,
+  labels,
 }: BlogMarkdownRendererProps) {
   const codeBlock: MarkdownCodeBlockOptions = {
     displayMode: codeBlockDisplayMode,
@@ -91,6 +94,7 @@ export function BlogMarkdownRenderer({
       components={components}
       widgetRegistry={widgetRegistry}
       widgetContext={widgetContext}
+      labels={labels}
     />
   );
 }

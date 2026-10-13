@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { MarkdownRendererCore } from "./MarkdownRendererCore";
 import { chatPreset } from "./presets/chat-preset";
 import { builtinWidgetRegistry } from "./widgets/builtin-registry";
@@ -9,6 +8,7 @@ import type {
   MarkdownWidgetRegistry,
   MarkdownWidgetContext,
 } from "./markdown-types";
+import type { MarkdownRendererLabelsInput } from "./markdown-labels";
 import type { Components } from "react-markdown";
 
 /** ChatMarkdownRenderer 组件的属性 */
@@ -27,6 +27,8 @@ export interface ChatMarkdownRendererProps {
   codeBlock?: MarkdownCodeBlockOptions;
   /** 是否启用原始 HTML（默认 false，untrusted） */
   enableRawHtml?: boolean;
+  /** 界面文案（用于国际化），每个分组都可以只传部分字段 */
+  labels?: MarkdownRendererLabelsInput;
 }
 
 /**
@@ -51,6 +53,7 @@ export function ChatMarkdownRenderer({
   widgetContext,
   codeBlock,
   enableRawHtml,
+  labels,
 }: ChatMarkdownRendererProps) {
   const registry = widgetRegistry ?? builtinWidgetRegistry;
 
@@ -64,6 +67,7 @@ export function ChatMarkdownRenderer({
       widgetRegistry={registry}
       widgetContext={widgetContext}
       enableRawHtml={enableRawHtml}
+      labels={labels}
     />
   );
 }

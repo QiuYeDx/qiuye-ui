@@ -202,10 +202,18 @@ interface RendererLease {
   token: object;
 }
 
+// 仅为本模块声明 process 的类型：Next.js / Vite / webpack 会在构建时静态替换
+// process.env.NODE_ENV。模块级声明让未安装 @types/node 的项目（如 Vite）也能通过类型检查，
+// 且不会与 @types/node 的全局声明冲突。
+declare const process: { env: { NODE_ENV?: string } };
+
 function isDevelopment() {
-  return (
-    typeof process !== "undefined" && process.env.NODE_ENV === "development"
-  );
+  try {
+    return process.env.NODE_ENV === "development";
+  } catch {
+    // 未经打包器替换、运行时也没有 process 时（如浏览器直接运行 ESM）视为非开发环境
+    return false;
+  }
 }
 
 function warnOnce(issue: string, message: string) {

@@ -85,21 +85,21 @@ qiuye-ui/
 - `dependencies`: `["react","lucide-react","motion"]`
 - `registryDependencies`: `["tabs","badge","button"]`
 
-### 2) `files[].path` 必填，`files[].target` 可选
+### 2) `files[].path` 必填，`files[].target` 写成与 `path` 相同
 
 - `path`：**你组件库仓库里**的真实路径，例如 `components/qiuye-ui/responsive-tabs.tsx`
-- `target`：可选，仅在需要**固定落盘位置**时使用（如 `registry:page` / `registry:file`）
+- `target`：落盘位置。本仓库由 `scripts/update-registry.mjs` 自动写成与 `path` 相同的值
 
-组件类文件不建议写 `target`，否则会绕过 `components.json` 的 aliases，导致 `src/` 与非 `src/` 目录无法自动适配。
+早期版本的 CLI 会按 aliases 推断落盘位置，所以组件文件可以不写 `target`。但 shadcn CLI 4 遇到没有 `target` 的文件会按 `type` 把它拍平到 `components/` 根目录：多文件组件（如 `code-block/`、`markdown-renderer/`）的 `index.ts`、`types.ts` 会互相覆盖，相对导入也随之失效。
 
-### 3) 不用纠结 `src/`：让 aliases 自动适配
+### 3) 不用纠结 `src/`：CLI 会自动补前缀
 
-组件类文件**不要写 `target`**，交给用户项目的 `components.json` aliases 去解析：
+写上 `target: "components/qiuye-ui/code-block/index.ts"` 之后：
 
-- aliases 会根据 `@/*` 指向自动落到 `src/components` 或 `components`
-- 你的 registry 里只需要保证 `files[].path` 在仓库内是正确的相对路径
+- 非 `src/` 项目落到 `components/qiuye-ui/code-block/index.ts`
+- `src/` 目录项目由 CLI 自动落到 `src/components/qiuye-ui/code-block/index.ts`（`lib/`、`hooks/` 同理）
 
-只有当你需要**固定写入位置**（如 `registry:page` / `registry:file`）时，才应该写 `target`。
+另一个容易踩的坑：同一个 registry item 里，不同目录的文件不要同名（如 `components/qiuye-ui/animated-number.tsx` 和 `lib/animated-number.ts`）。CLI 按文件名改写 `@/` 导入，可能把 `@/lib/animated-number` 改写成组件自身路径。
 
 ### 4) 组件里只要用了 hooks / 事件 / 状态，就要写 `"use client"`
 
@@ -133,7 +133,7 @@ shadcn CLI 支持的 registry item schema 见：
 - `registryDependencies`：需要安装的 shadcn/ui 组件
 - `files`：要写入用户项目的文件列表
   - `path`：组件库仓库里的文件路径（给维护脚本用）
-  - `target`：可选；仅在需要固定落盘位置时使用
+  - `target`：落盘位置；本仓库由脚本写成与 `path` 相同的值
   - `content`：文件内容（源码字符串）
 
 CLI 流程（简化）：
@@ -218,8 +218,7 @@ pnpm add class-variance-authority clsx
 }
 ```
 
-组件类文件建议不写 `target`，交给 `components.json` 的 aliases 自动解析（可同时兼容 `src/` 与非 `src/` 目录）。
-只有 `registry:page` / `registry:file` 这类需要固定落盘位置的文件才写 `target`。
+骨架里不用写 `target`，运行 `pnpm update-registry` 时脚本会把它写成与 `path` 相同的值（原因见上文“`files[].target` 写成与 `path` 相同”）。
 
 ### 2.2 再看一个“真实可用”的示例（本仓库）
 

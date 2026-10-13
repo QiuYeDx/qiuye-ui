@@ -154,9 +154,40 @@ export interface TourProps {
   spotlightClassName?: string;
   /** 自定义底部操作区 */
   renderFooter?: (context: TourRenderContext) => React.ReactNode;
+  /** 界面文案（用于国际化），未传入的字段使用 `DEFAULT_TOUR_LABELS` */
+  labels?: Partial<TourLabels>;
   /** 根浮层的额外 className */
   className?: string;
 }
+
+/** Tour 的界面文案 */
+export interface TourLabels {
+  /** 跳过按钮 */
+  skip: string;
+  /** 上一步按钮 */
+  previous: string;
+  /** 窄屏紧凑底栏中的上一步按钮 */
+  previousCompact: string;
+  /** 下一步按钮 */
+  next: string;
+  /** 最后一步的完成按钮 */
+  done: string;
+  /** 供屏幕阅读器播报的步骤进度，`current` 从 1 开始 */
+  stepStatus: (current: number, total: number) => string;
+  /** 当前步骤的目标元素不可见时的提示 */
+  targetUnavailable: string;
+}
+
+/** Tour 默认界面文案 */
+export const DEFAULT_TOUR_LABELS: TourLabels = {
+  skip: "Skip",
+  previous: "Previous",
+  previousCompact: "Prev",
+  next: "Next",
+  done: "Done",
+  stepStatus: (current, total) => `Step ${current} of ${total}`,
+  targetUnavailable: "当前目标暂不可见，你仍然可以继续下一步或跳过引导。",
+};
 
 interface TourRect {
   top: number;
@@ -576,8 +607,10 @@ export function Tour({
   popoverClassName,
   spotlightClassName,
   renderFooter,
+  labels: labelsProp,
   className,
 }: TourProps) {
+  const labels = { ...DEFAULT_TOUR_LABELS, ...labelsProp };
   const prefersReducedMotion = useReducedMotion();
   const reactId = useId();
   const instanceId = useMemo(() => reactId.replace(/:/g, ""), [reactId]);
@@ -1370,7 +1403,10 @@ export function Tour({
                       {activeStep.title}
                     </h2>
                     <div className="sr-only" aria-live="polite">
-                      Step {clampedVisualStepIndex + 1} of {steps.length}
+                      {labels.stepStatus(
+                        clampedVisualStepIndex + 1,
+                        steps.length,
+                      )}
                     </div>
                   </div>
                   <Badge
@@ -1410,7 +1446,7 @@ export function Tour({
                       {activeStep.content}
                       {missingTarget && (
                         <p className="mt-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
-                          当前目标暂不可见，你仍然可以继续下一步或跳过引导。
+                          {labels.targetUnavailable}
                         </p>
                       )}
                     </motion.div>
@@ -1438,7 +1474,7 @@ export function Tour({
                       )}
                       onClick={skip}
                     >
-                      Skip
+                      {labels.skip}
                     </Button>
 
                     <div
@@ -1461,7 +1497,9 @@ export function Tour({
                         onClick={previous}
                       >
                         <ChevronLeft className="size-3.5" />
-                        {isCompactFooter ? "Prev" : "Previous"}
+                        {isCompactFooter
+                          ? labels.previousCompact
+                          : labels.previous}
                       </Button>
                       <Button
                         type="button"
@@ -1479,7 +1517,7 @@ export function Tour({
                         )}
                         onClick={next}
                       >
-                        {isLastStep ? "Done" : "Next"}
+                        {isLastStep ? labels.done : labels.next}
                         {!isLastStep && <ChevronRight className="size-3.5" />}
                       </Button>
                     </div>

@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { ExternalLink } from "lucide-react";
 import { sanitizeUrl } from "@/lib/markdown/sanitize-url";
 import { isUrlAllowed } from "@/lib/markdown/link-policy";

@@ -289,6 +289,14 @@ export const componentRegistry: ComponentRegistry = {
             required: false,
           },
           {
+            name: "fallbackLabel",
+            type: "string",
+            description:
+              "label、name、title、eyebrow 都取不到文字时使用的无障碍名称。",
+            required: false,
+            default: "\"卡片详情\"",
+          },
+          {
             name: "className",
             type: "string",
             description: "卡片类名；卡片高度由调用方决定。",
@@ -1302,6 +1310,13 @@ export const componentRegistry: ComponentRegistry = {
         default: "false",
       },
       {
+        name: "labels",
+        type: "Partial<ImageViewerLabels>",
+        description:
+          "界面文案（用于国际化）：emptySource(alt)、loadError、lightbox(alt)；未传入的字段使用 DEFAULT_IMAGE_VIEWER_LABELS",
+        required: false,
+      },
+      {
         name: "loading",
         type: '"lazy" | "eager"',
         description: "图片加载策略（HTML img 原生属性）",
@@ -1980,6 +1995,13 @@ export const componentRegistry: ComponentRegistry = {
             required: false,
           },
           {
+            name: "labels",
+            type: "Partial<CodeBlockLabels>",
+            description:
+              "界面文案（用于国际化）：expand(lineCount)、collapse；未传入的字段使用 DEFAULT_CODE_BLOCK_LABELS",
+            required: false,
+          },
+          {
             name: "className",
             type: "string",
             description: "额外的 CSS 类名",
@@ -2023,6 +2045,13 @@ export const componentRegistry: ComponentRegistry = {
             description: "是否显示复制按钮（需要同时传入 code）",
             required: false,
             default: "true",
+          },
+          {
+            name: "labels",
+            type: "Partial<CodeBlockPanelLabels>",
+            description:
+              "界面文案（用于国际化）：copy、copied；未传入的字段使用 DEFAULT_CODE_BLOCK_PANEL_LABELS",
+            required: false,
           },
           {
             name: "children",
@@ -2256,6 +2285,13 @@ export const componentRegistry: ComponentRegistry = {
             description: "传递给 Widget 的运行上下文",
             required: false,
           },
+          {
+            name: "labels",
+            type: "MarkdownRendererLabelsInput",
+            description:
+              "界面文案（用于国际化），按 mermaid / widgets / codeBlock / codeBlockPanel / imageViewer 分组，每组可只传部分字段；建议传入引用稳定的对象",
+            required: false,
+          },
         ],
       },
       {
@@ -2304,6 +2340,13 @@ export const componentRegistry: ComponentRegistry = {
             description: "是否启用原始 HTML；Chat 预设默认关闭",
             required: false,
             default: "false",
+          },
+          {
+            name: "labels",
+            type: "MarkdownRendererLabelsInput",
+            description:
+              "界面文案（用于国际化），按 mermaid / widgets / codeBlock / codeBlockPanel / imageViewer 分组，每组可只传部分字段；建议传入引用稳定的对象",
+            required: false,
           },
         ],
       },
@@ -2454,6 +2497,13 @@ export const componentRegistry: ComponentRegistry = {
         name: "contentClassName",
         type: "string",
         description: "面板容器额外类名",
+        required: false,
+      },
+      {
+        name: "labels",
+        type: "Partial<ColorPickerLabels>",
+        description:
+          "界面文案（用于国际化）：presets、recent、trigger(color)；未传入的字段使用 DEFAULT_COLOR_PICKER_LABELS",
         required: false,
       },
       {
@@ -2696,6 +2746,13 @@ export const componentRegistry: ComponentRegistry = {
         name: "renderFooter",
         type: "(context: TourRenderContext) => React.ReactNode",
         description: "自定义底部操作区",
+        required: false,
+      },
+      {
+        name: "labels",
+        type: "Partial<TourLabels>",
+        description:
+          "界面文案（用于国际化）：skip、previous、previousCompact、next、done、stepStatus(current, total)、targetUnavailable；未传入的字段使用 DEFAULT_TOUR_LABELS",
         required: false,
       },
       {

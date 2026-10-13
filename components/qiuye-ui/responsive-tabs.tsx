@@ -354,8 +354,10 @@ const ResponsiveTabs = React.forwardRef<
         };
 
     // 背景层保留外部阴影；只有 scroller 裁切滚动内容。
+    // radix-nova 的 TabsList 通过 group-data-horizontal/tabs:h-8 设置高度，
+    // 需要同一变体的 h-auto 才能覆盖（new-york 无该变体，额外类名无副作用）。
     const listClass = cn(
-      "relative block h-auto w-full min-w-0 overflow-visible p-0",
+      "relative block h-auto w-full min-w-0 overflow-visible p-0 group-data-horizontal/tabs:h-auto",
       listClassName,
     );
 
@@ -400,6 +402,10 @@ const ResponsiveTabs = React.forwardRef<
       // 当启用 layoutId 动画高亮时，取消 trigger 自带的选中态背景/阴影/边框，改由 motion.span 承载
       animatedHighlight &&
         "relative data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent dark:data-[state=active]:border-transparent",
+      // radix-nova 的 TabsTrigger 用 data-active:* 与 group 变体设置选中态背景/阴影，
+      // data-[state=active]:* 覆盖不到，需要写同一变体
+      animatedHighlight &&
+        "group-data-[variant=default]/tabs-list:data-active:shadow-none data-active:bg-transparent dark:data-active:bg-transparent dark:data-active:border-transparent",
       triggerClassName,
     );
 

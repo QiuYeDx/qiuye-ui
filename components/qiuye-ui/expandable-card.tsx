@@ -461,6 +461,11 @@ export interface ExpandableCardProps {
   children?: React.ReactNode;
   /** 卡片按钮与对话框的无障碍名称；默认取 `name` 或 `title` 中的文字 */
   label?: string;
+  /**
+   * `label`、`name`、`title`、`eyebrow` 都取不到文字时使用的无障碍名称
+   * @default "卡片详情"
+   */
+  fallbackLabel?: string;
   /** 受控模式下的展开状态 */
   open?: boolean;
   /**
@@ -546,6 +551,7 @@ export function ExpandableCard({
   actions,
   children,
   label,
+  fallbackLabel = "卡片详情",
   open: openProp,
   defaultOpen = false,
   onOpenChange,
@@ -756,7 +762,11 @@ export function ExpandableCard({
     ? { duration: 0.2 }
     : SHEET_SPRING;
   const accessibleName =
-    label ?? textOf(name) ?? textOf(title) ?? textOf(eyebrow) ?? "卡片详情";
+    label ??
+    textOf(name) ??
+    textOf(title) ??
+    textOf(eyebrow) ??
+    fallbackLabel;
 
   // 卡片：视差、高光与可见性
   const { x, y } = usePointerParallax(cardRef, parallax && !reduceMotion);

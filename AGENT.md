@@ -100,7 +100,8 @@ shadcn CLI 真正读取的是 `public/registry` 下的 JSON 文件。站点展�
 
 - `public/registry/registry.json` 由 `pnpm update-registry` 生成，不要手动编辑。
 - `files[].content` 由脚本回填，新增 registry item 时可以留空或不写。
-- 组件源码文件通常不要写 `target`，交给用户项目的 `components.json` aliases 适配 `src/` 或非 `src/` 目录。
+- `files[].target` 由脚本写成与 `path` 相同的值，不要手写或手改。shadcn CLI 4 遇到没有 `target` 的文件会按 `type` 拍平到 `components/`、`lib/` 根目录，导致 `code-block/`、`markdown-renderer/`、`matrix-effect/` 等多文件组件的 `index.ts`、`types.ts` 互相覆盖、`@/components/qiuye-ui/...` 与相对导入失效；写上 `target` 后 CLI 会保留子目录，并在 `src/` 目录项目中自动落到 `src/components/qiuye-ui/...`、`src/lib/...`。
+- 同一个 registry item 内，不同目录下的文件不要使用相同的文件名（basename）。CLI 会按文件名改写 `@/` 导入，例如 `@/lib/animated-number` 曾被改写成 `@/components/qiuye-ui/animated-number`，造成组件自我导入。
 - 依赖 npm 包时写入 `dependencies`，例如 `motion`、`lucide-react`。
 - 依赖 shadcn/ui 基础组件时，`registryDependencies` 写裸名称，例如 `button`、`tabs`、`dialog`。
 - 依赖本仓库自定义组件时，`registryDependencies` 必须写 `@qiuye-ui/<id>`，例如 `@qiuye-ui/dual-state-toggle`。
@@ -195,6 +196,16 @@ MCP resources：
 - 组件注释和 JSDoc 使用简体中文。
 - 保持浅色 / 深色主题兼容。
 - UI 改动需要注意移动端、桌面端和静态导出。
+
+### 安装到用户项目后的兼容性
+
+`components/qiuye-ui/**`（demos 除外）会原样安装到用户项目，常见目标是 `shadcn init -t vite` 生成的 Vite + TS 严格模式项目，不一定是 Next.js：
+
+- 不使用 Next.js 专属写法：不写 styled-jsx 的 `<style jsx>`（需要内联全局样式时用 React 19 的 `<style href="..." precedence="default">`，会提升到 `<head>` 并按 `href` 去重），不写 `eslint-disable ... @next/next/*` 注释（本仓库已在 `eslint.config.mjs` 中为 registry 源码关闭 `@next/next/no-img-element`），不依赖 `next/image`、`next/link`。
+- 能通过 `noUnusedLocals` / `noUnusedParameters` / `verbatimModuleSyntax`：不留未使用的 `import React from "react"`，纯类型导入用 `import type`。
+- 读取 `process.env.NODE_ENV` 时，在模块内写 `declare const process: { env: { NODE_ENV?: string } };` 并用 `try/catch` 包裹读取（参考 `matrix-effect/matrix-effect.tsx` 的 `isDevelopment()`），这样 Vite 项目无需 `@types/node`，打包器仍能静态替换。
+- 覆盖 shadcn/ui 基础组件的样式时，要同时兼容 `new-york` 与 `radix-nova` 等风格：后者用 `group-data-horizontal/tabs:h-8`、`data-active:*` 等变体设置样式，只写 `h-auto`、`data-[state=active]:*` 无法覆盖，需要补上同一变体的类名（参考 `responsive-tabs.tsx`、`clip-path-tabs.tsx`）。
+- 界面文案通过 `labels?: Partial<XxxLabels>` 属性开放覆盖，并导出 `DEFAULT_XXX_LABELS` 作为默认值（参考 `tour.tsx`、`color-picker.tsx`），不要在组件里硬编码无法替换的文案。
 
 ## 参考入口
 

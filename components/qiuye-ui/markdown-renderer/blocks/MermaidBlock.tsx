@@ -26,6 +26,10 @@ import {
   useReducedMotion,
 } from "motion/react";
 import { Button } from "@/components/ui/button";
+import {
+  DEFAULT_MERMAID_BLOCK_LABELS,
+  type MermaidBlockLabels,
+} from "../markdown-labels";
 
 // ============================================
 // Mermaid 动态导入与主题
@@ -300,6 +304,11 @@ function getMermaidThemeCss(palette: MermaidThemePalette): string {
 // MermaidBlock 组件
 // ============================================
 
+/** 渲染错误：语法无效时在渲染期再映射为文案，避免文案变化触发重新渲染图表 */
+type MermaidRenderError =
+  | { kind: "invalid" }
+  | { kind: "failed"; message?: string };
+
 export interface MermaidBlockProps {
   children: string;
   stickyLineNumbers?: boolean;
@@ -307,6 +316,8 @@ export interface MermaidBlockProps {
   customTheme?: CodeBlockThemeConfig | PrismTheme;
   /** 是否显示 Mermaid 容器阴影 */
   showContainerShadow?: boolean;
+  /** 界面文案（用于国际化），未传入的字段使用 `DEFAULT_MERMAID_BLOCK_LABELS` */
+  labels?: Partial<MermaidBlockLabels>;
 }
 
 export function MermaidBlock({
@@ -315,11 +326,18 @@ export function MermaidBlock({
   colorTheme,
   customTheme,
   showContainerShadow = false,
+  labels: labelsProp,
 }: MermaidBlockProps) {
+  const labels = { ...DEFAULT_MERMAID_BLOCK_LABELS, ...labelsProp };
   const code = children.trim();
   const [showPreview, setShowPreview] = useState(true);
   const [svgContent, setSvgContent] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<MermaidRenderError | null>(null);
+  const errorMessage = error
+    ? error.kind === "invalid"
+      ? labels.invalidSyntax
+      : error.message || labels.renderFailed
+    : null;
   const [mounted, setMounted] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState<boolean | null>(null);
   const { resolvedTheme } = useTheme();
@@ -469,7 +487,7 @@ export function MermaidBlock({
         if (cancelled) return;
 
         if (!isValid) {
-          setError("Mermaid 语法验证失败");
+          setError({ kind: "invalid" });
           return;
         }
 
@@ -482,7 +500,10 @@ export function MermaidBlock({
       } catch (err) {
         if (cancelled) return;
         console.error("Mermaid render error:", err);
-        setError(err instanceof Error ? err.message : "Mermaid 渲染失败");
+        setError({
+          kind: "failed",
+          message: err instanceof Error ? err.message : undefined,
+        });
       }
     };
 
@@ -692,7 +713,7 @@ export function MermaidBlock({
         data-container-shadow={showContainerShadow ? "true" : undefined}
       >
         <div className="flex items-center justify-center py-8 text-muted-foreground">
-          加载中...
+          {labels.loading}
         </div>
       </div>
     );
@@ -703,7 +724,7 @@ export function MermaidBlock({
       return (
         <div className="flex flex-col items-center justify-center gap-2 text-destructive">
           <AlertCircle className="h-6 w-6" />
-          <span className="text-sm">{error}</span>
+          <span className="text-sm">{errorMessage}</span>
         </div>
       );
     }
@@ -711,7 +732,7 @@ export function MermaidBlock({
     if (!svgContent) {
       return (
         <div className="flex items-center justify-center py-4 text-muted-foreground text-sm">
-          渲染中...
+          {labels.rendering}
         </div>
       );
     }
@@ -729,7 +750,7 @@ export function MermaidBlock({
       return (
         <div className="flex flex-col items-center justify-center gap-2 text-destructive">
           <AlertCircle className="h-6 w-6" />
-          <span className="text-sm">{error}</span>
+          <span className="text-sm">{errorMessage}</span>
         </div>
       );
     }
@@ -737,7 +758,7 @@ export function MermaidBlock({
     if (!svgContent) {
       return (
         <div className="flex items-center justify-center py-4 text-muted-foreground text-sm">
-          渲染中...
+          {labels.rendering}
         </div>
       );
     }
@@ -764,7 +785,7 @@ export function MermaidBlock({
   const fullscreenToolbarInfo = (
     <div className="flex items-center gap-2">
       <span className="text-sm font-medium text-muted-foreground">
-        Mermaid 图表预览
+        {labels.fullscreenTitle}
       </span>
       <span className="text-xs text-muted-foreground/60">{scaleDisplay}%</span>
     </div>
@@ -776,7 +797,7 @@ export function MermaidBlock({
         onClick={handleZoomOut}
         disabled={scaleDisplay <= MIN_SCALE * 100}
         className="p-2 rounded-md text-muted-foreground cursor-pointer hover:text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        title="缩小"
+        title={labels.zoomOut}
       >
         <ZoomOut className="h-4 w-4" />
       </button>
@@ -784,14 +805,14 @@ export function MermaidBlock({
         onClick={handleZoomIn}
         disabled={scaleDisplay >= MAX_SCALE * 100}
         className="p-2 rounded-md text-muted-foreground cursor-pointer hover:text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        title="放大"
+        title={labels.zoomIn}
       >
         <ZoomIn className="h-4 w-4" />
       </button>
       <button
         onClick={resetTransform}
         className="p-2 rounded-md text-muted-foreground cursor-pointer hover:text-foreground hover:bg-muted/50 transition-colors"
-        title="重置视图"
+        title={labels.resetView}
       >
         <RotateCcw className="h-4 w-4" />
       </button>
@@ -799,7 +820,7 @@ export function MermaidBlock({
       <button
         onClick={exitFullscreen}
         className="p-2 rounded-md text-muted-foreground cursor-pointer hover:text-foreground hover:bg-muted/50 transition-colors"
-        title="退出预览 (ESC)"
+        title={labels.exitFullscreenTitle}
       >
         <X className="h-4 w-4" />
       </button>
@@ -824,7 +845,7 @@ export function MermaidBlock({
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
-              title="查看源码"
+              title={labels.codeTabTitle}
             >
               {!showPreview && (
                 <motion.span
@@ -834,7 +855,7 @@ export function MermaidBlock({
                 />
               )}
               <Code className="relative h-3.5 w-3.5" />
-              <span className="relative">代码</span>
+              <span className="relative">{labels.codeTab}</span>
             </button>
             <button
               onClick={() => setShowPreview(true)}
@@ -843,7 +864,7 @@ export function MermaidBlock({
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
-              title="查看预览"
+              title={labels.previewTabTitle}
             >
               {showPreview && (
                 <motion.span
@@ -853,7 +874,7 @@ export function MermaidBlock({
                 />
               )}
               <Eye className="relative h-3.5 w-3.5" />
-              <span className="relative">预览</span>
+              <span className="relative">{labels.previewTab}</span>
             </button>
           </div>
         </div>
@@ -882,7 +903,7 @@ export function MermaidBlock({
                       variant="ghost"
                       onClick={enterFullscreen}
                       className="absolute top-2 right-2 size-8 md:opacity-0 md:group-hover/mermaid:opacity-100"
-                      title="全屏查看"
+                      title={labels.enterFullscreen}
                     >
                       <Maximize2 className="h-4 w-4" />
                     </Button>
@@ -927,7 +948,7 @@ export function MermaidBlock({
             onTouchEnd={handleTouchEnd}
             role="dialog"
             aria-modal="true"
-            aria-label="Mermaid 图表全屏预览"
+            aria-label={labels.fullscreenDialog}
           >
             <motion.div
               className="absolute inset-0 bg-background/95 backdrop-blur-sm"
@@ -1098,11 +1119,11 @@ export function MermaidBlock({
                   transition: fullscreenPanelExitTransition,
                 }}
               >
-                <span>滚轮缩放</span>
+                <span>{labels.hintWheelZoom}</span>
                 <span className="w-px h-3 bg-border/50" />
-                <span>拖拽移动</span>
+                <span>{labels.hintDragPan}</span>
                 <span className="w-px h-3 bg-border/50" />
-                <span>ESC 退出</span>
+                <span>{labels.hintEscExit}</span>
               </motion.div>
             )}
 
@@ -1137,7 +1158,7 @@ export function MermaidBlock({
                   className="pointer-events-auto h-11 rounded-full border-border/40 bg-background/78 px-5 text-sm text-foreground shadow-lg shadow-black/5 backdrop-blur-md hover:bg-background/88"
                 >
                   <X className="h-4 w-4" />
-                  退出预览
+                  {labels.exitFullscreen}
                 </Button>
               </motion.div>
             )}

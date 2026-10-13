@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import {
   BlogMarkdownRenderer,
   type BlogMarkdownRendererProps,
@@ -29,6 +28,17 @@ export { BlogMarkdownRenderer } from "./BlogMarkdownRenderer";
 export { ChatMarkdownRenderer } from "./ChatMarkdownRenderer";
 export type { BlogMarkdownRendererProps } from "./BlogMarkdownRenderer";
 export type { ChatMarkdownRendererProps } from "./ChatMarkdownRenderer";
+export {
+  DEFAULT_MARKDOWN_RENDERER_LABELS,
+  DEFAULT_MARKDOWN_WIDGET_LABELS,
+  DEFAULT_MERMAID_BLOCK_LABELS,
+} from "./markdown-labels";
+export type {
+  MarkdownRendererLabels,
+  MarkdownRendererLabelsInput,
+  MarkdownWidgetLabels,
+  MermaidBlockLabels,
+} from "./markdown-labels";
 export type {
   MarkdownCodeBlockOptions,
   MarkdownDensity,

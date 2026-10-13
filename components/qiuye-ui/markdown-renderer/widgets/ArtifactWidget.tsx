@@ -1,12 +1,12 @@
 "use client";
 
-import React from "react";
 import { FileText, Download, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type {
   MarkdownWidgetComponentProps,
   MarkdownWidgetDefinition,
 } from "../markdown-types";
+import { useMarkdownLabels } from "../markdown-labels";
 
 interface ArtifactProps {
   title: string;
@@ -24,6 +24,7 @@ function ArtifactWidgetComponent({
 }: MarkdownWidgetComponentProps<ArtifactProps>) {
   const { title, type = "file", language, content, downloadUrl, openUrl } =
     props;
+  const { widgets: labels } = useMarkdownLabels();
 
   const handleAction = (action: string) => {
     context.onWidgetAction?.({
@@ -71,7 +72,7 @@ function ArtifactWidgetComponent({
               onClick={() => handleAction("download")}
             >
               <Download className="h-3.5 w-3.5" />
-              下载
+              {labels.artifactDownload}
             </Button>
           )}
           {openUrl && (
@@ -82,7 +83,7 @@ function ArtifactWidgetComponent({
               onClick={() => handleAction("open")}
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              打开
+              {labels.artifactOpen}
             </Button>
           )}
         </div>

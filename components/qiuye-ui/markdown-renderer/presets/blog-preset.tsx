@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import type { Components } from "react-markdown";
 import { ImageViewer } from "@/components/qiuye-ui/image-viewer";
 import {
@@ -33,6 +32,7 @@ function createBlogComponents(ctx: MarkdownPresetComponentContext): Components {
     codeBlock,
     widgetRegistry,
     widgetContext,
+    labels,
   } = ctx;
 
   return {
@@ -79,6 +79,7 @@ function createBlogComponents(ctx: MarkdownPresetComponentContext): Components {
             colorTheme={codeBlock.colorTheme}
             customTheme={codeBlock.customTheme}
             showContainerShadow={codeBlock.mermaidShowShadow}
+            labels={labels.mermaid}
           >
             {rawCode}
           </MermaidBlock>
@@ -93,6 +94,7 @@ function createBlogComponents(ctx: MarkdownPresetComponentContext): Components {
           code={rawCode}
           isDark={isDarkRef.current}
           colorTheme={codeBlock.colorTheme}
+          labels={labels.codeBlockPanel}
         >
           <CodeBlock
             language={language}
@@ -105,6 +107,7 @@ function createBlogComponents(ctx: MarkdownPresetComponentContext): Components {
             stickyLineNumbers={codeBlock.stickyLineNumbers}
             highlightLines={highlightLines}
             noShadow
+            labels={labels.codeBlock}
             showLineNumbers={12}
           >
             {rawCode}
@@ -192,6 +195,7 @@ function createBlogComponents(ctx: MarkdownPresetComponentContext): Components {
         <ImageViewer
           wrapperClassName="my-0"
           hoverScale={1.05}
+          labels={labels.imageViewer}
           src={src}
           alt={alt}
           {...props}

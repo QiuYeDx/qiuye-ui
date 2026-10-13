@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import type { Components } from "react-markdown";
 import {
   CodeBlock,
@@ -34,6 +33,7 @@ function createChatComponents(ctx: MarkdownPresetComponentContext): Components {
     widgetRegistry,
     widgetContext,
     securityProfile,
+    labels,
   } = ctx;
 
   return {
@@ -81,6 +81,7 @@ function createChatComponents(ctx: MarkdownPresetComponentContext): Components {
             code={rawCode}
             isDark={isDarkRef.current}
             colorTheme={codeBlock.colorTheme}
+            labels={labels.codeBlockPanel}
           >
             <CodeBlock
               language="mermaid"
@@ -91,6 +92,7 @@ function createChatComponents(ctx: MarkdownPresetComponentContext): Components {
               maxHeight="200px"
               stickyLineNumbers={false}
               noShadow
+              labels={labels.codeBlock}
             >
               {rawCode}
             </CodeBlock>
@@ -106,6 +108,7 @@ function createChatComponents(ctx: MarkdownPresetComponentContext): Components {
           code={rawCode}
           isDark={isDarkRef.current}
           colorTheme={codeBlock.colorTheme}
+          labels={labels.codeBlockPanel}
         >
           <CodeBlock
             language={language}
@@ -118,6 +121,7 @@ function createChatComponents(ctx: MarkdownPresetComponentContext): Components {
             stickyLineNumbers={codeBlock.stickyLineNumbers ?? false}
             highlightLines={highlightLines}
             noShadow
+            labels={labels.codeBlock}
             showLineNumbers={12}
           >
             {rawCode}
@@ -212,7 +216,6 @@ function createChatComponents(ctx: MarkdownPresetComponentContext): Components {
       if (!safeSrc) return null;
 
       return (
-        // eslint-disable-next-line @next/next/no-img-element -- Chat markdown images can come from arbitrary safe URLs.
         <img
           src={safeSrc}
           alt={alt || ""}
