@@ -58,6 +58,9 @@
 - **主题变量不能自引用**：如果全局 css 里有 `--shadow-md: var(--shadow-md)` 这类写法，变量循环失效；Tailwind 4 把 ring 和 shadow 合成一条 box-shadow，结果菜单、Select、Popover 的描边和阴影会一起消失。迁移前先 grep `--x: var(--x)` 并删除（FusionKit 踩过）。
 - **Select 选项贴边**：nova 把 4px 内边距放在 `SelectGroup` 上，Viewport 本身没有；旧写法直接把 `SelectItem` 放进 `SelectContent`，选项会贴到弹层边缘。重装后把 `p-1` 移到 Viewport 上，并去掉 SelectGroup 的 `p-1`（已在官网、博客、FusionKit 修复）。
 - **修复主题变量后，沉睡的阴影会集体出现**：如果项目原来的 `shadow-*` 因变量失效从未生效，修好后它们会第一次渲染，页面内卡片、输入框会突然变重。修完要逐页截图，页面内元素去掉从未生效过的阴影，浮层保留。
+- **Popover 与 Tooltip 改成了 flex 布局**：nova 的 PopoverContent 是 `flex flex-col gap-2.5`（为 PopoverHeader 设计），TooltipContent 是 `inline-flex items-center gap-1.5`（为快捷键提示设计）。旧代码里 Popover 内容自带 `space-y-*` / `mb-*`，会和 gap 叠加；多行 Tooltip（标题加说明）会被横排成一行。项目没用到 PopoverHeader / Kbd 时，把两者改回块级布局（FusionKit 已这样处理）。
+- **sm 按钮变成 28px、12.8px 字**：`size="sm"` 从 32px/14px 变为 28px/0.8rem。和显式 20px 图标、固定高度容器搭配时比例会失调（FusionKit 底部导航），这类地方改用 `size="default"`（32px/14px）。
+- **后代选择器会漏到嵌套组件**：`.x [data-slot="scroll-area-viewport"] > div > div`、`[&_[data-radix-scroll-area-viewport]]` 这类写法会命中内容里嵌套的 ScrollArea，造成多余的内边距和边框；只想作用于自身时用子选择器 `>`。
 - **Dialog 默认变窄、Footer 变样**：nova 的 DialogContent 默认 `sm:max-w-sm`（384px，旧版 `sm:max-w-lg` 是 512px），用默认宽度的弹窗内容可能被挤压；DialogFooter 改为 `-mx-4 -mb-4` 负边距加 `bg-muted/50` 灰底，依赖 `p-4` 的内容区。内容较多的项目可以在本地 dialog 里保留 `sm:max-w-lg`。
 - **Select 默认 `position="item-aligned"`**：下拉菜单会覆盖在触发器上；习惯在下方弹出的项目要把默认值改回 `popper`。
 - **图片贴顶的卡片要加 `py-0 gap-0`**：nova 只在第一个子元素是 `<img>` 时自动去掉顶部内边距；图片外面包了 div、或卡片里只有图片时，需要手动加 `py-0`（必要时加 `gap-0`）。
