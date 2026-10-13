@@ -1,5 +1,11 @@
 # QIUYE-UI-PIT-0005: Registry content churns with Windows line endings
 
+## Status
+
+Resolved in the generator. Since 2026-10-13 `scripts/update-registry.mjs`
+normalizes source content to LF before embedding it, and every committed
+registry item stores LF content. Keep this entry for diagnosing regressions.
+
 ## Area
 
 Build / Registry generation
@@ -19,29 +25,26 @@ almost every registry item was updated. `git status` lists every
 ## Root cause
 
 With `core.autocrlf=true`, Windows checkouts store source files with CRLF line
-endings. `scripts/update-registry.mjs` reads the working-tree file verbatim and
-embeds it into `files[].content`, so the JSON string gains literal `\r\n`
-sequences. Items generated on other machines contain `\n`, and the committed
-registry already mixes both styles.
+endings. The generator used to read the working-tree file verbatim and embed it
+into `files[].content`, so the JSON string gained literal `\r\n` sequences while
+items generated on other machines contained `\n`.
 
 ## Do
 
-- Run `pnpm update-registry` as usual, then keep only the registry files that
-  belong to the change: the edited component's `public/registry/<id>.json` and
-  `public/registry/registry.json` when the index changed.
-- Restore every other registry item whose diff is line endings only:
-  `git checkout -- public/registry/<other-id>.json`.
-- Before restoring, confirm the diff really is line endings only, for example by
-  comparing `content.replace(/\r\n/g, "\n")` with the committed version.
-- Check the edited item's `content` against its source with line endings
-  normalized, not byte for byte.
+- Keep the `.replace(/\r\n/g, "\n")` normalization in
+  `tryReadFileByCandidates()` of `scripts/update-registry.mjs`.
+- On Windows, expect `pnpm update-registry` to report updates only for items
+  whose source really changed. If unrelated items show up, check that the
+  normalization is still in place before committing.
+- Compare an item's `content` with its source after normalizing line endings,
+  not byte for byte.
 
 ## Avoid
 
 - Do not commit a registry-wide diff that only changes line endings; it hides
   the real change and churns every item's install payload.
-- Do not normalize line endings inside the script or rewrite the whole registry
-  as part of an unrelated component change.
+- Do not remove the normalization or write `content` from a path that bypasses
+  it.
 
 ## Validation
 

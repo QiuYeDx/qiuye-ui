@@ -52,6 +52,20 @@ pnpm dlx shadcn@latest add https://ui.qiuyedx.com/registry/responsive-tabs.json
 
 国际域名对应的 Registry 地址为 `https://qiuye-ui.vercel.app/registry/{name}.json`。
 
+### 旧版 new-york 项目
+
+QiuYe UI 正在整体迁移到 shadcn/ui 4 的 `radix-nova` 风格（尺寸更紧凑）。迁移前的版本冻结在 `v1` 快照中，还在使用旧版 `new-york` 风格、暂时不打算迁移的项目，可以把 Registry 指向 v1：
+
+```json
+{
+  "registries": {
+    "@qiuye-ui": "https://ui.qiuyedx.com/registry/v1/{name}.json"
+  }
+}
+```
+
+v1 快照不会再更新。组件之间的依赖（如 `@qiuye-ui/smooth-corners`）同样会从 v1 解析，因此请使用 alias 方式安装，不要直接使用完整 URL。
+
 ## 组件
 
 | 组件                                                                                 | Registry 名称             | 说明                                                                                   |

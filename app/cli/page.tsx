@@ -772,6 +772,12 @@ export default function QuickStartPage() {
               https://qiuye-ui.vercel.app/registry/{"{name}"}.json
             </code>
           </div>
+          <div className="mt-3 rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
+            仍在使用旧版 new-york 风格的项目，可以改用冻结的 v1 快照：{" "}
+            <code className="break-all text-foreground">
+              https://ui.qiuyedx.com/registry/v1/{"{name}"}.json
+            </code>
+          </div>
         </Surface>
 
         <Surface className="p-5" variants={cardVariants}>

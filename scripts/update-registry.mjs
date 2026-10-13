@@ -26,6 +26,8 @@ const REGISTRY_SCHEMA = "https://ui.shadcn.com/schema/registry.json";
 const DEFAULT_REGISTRY_NAME = "qiuye-ui";
 const DEFAULT_REGISTRY_HOMEPAGE = "https://ui.qiuyedx.com";
 const SKIP_FILE_NAMES = new Set(["index.json", REGISTRY_MANIFEST_NAME]);
+// v1、v2 等目录是冻结的历史快照，供尚未迁移的项目继续安装，生成时不能改动
+const FROZEN_DIR_PATTERN = /^v\d+$/;
 
 function parseArgs(args) {
   const out = {};
@@ -52,7 +54,9 @@ async function* walk(dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   for (const e of entries) {
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) yield* walk(p);
+    if (e.isDirectory()) {
+      if (!FROZEN_DIR_PATTERN.test(e.name)) yield* walk(p);
+    }
     else if (e.isFile()) yield p;
   }
 }
@@ -102,7 +106,9 @@ async function tryReadFileByCandidates(base, relPath) {
     try {
       const stat = await fs.stat(c);
       if (stat.isFile()) {
-        const content = await fs.readFile(c, "utf-8");
+        // 统一为 LF：Windows 开启 core.autocrlf 时工作区是 CRLF，直接写入会让
+        // registry 产生整文件 diff，用户安装后也会拿到 CRLF 文件（PIT-0005）
+        const content = (await fs.readFile(c, "utf-8")).replace(/\r\n/g, "\n");
         return { found: true, content, resolved: c };
       }
     } catch {
