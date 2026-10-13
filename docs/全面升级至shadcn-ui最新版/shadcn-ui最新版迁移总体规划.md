@@ -135,7 +135,7 @@
    - 真正的自有定制只有 ScrollArea（viewportRef / viewportClassName）和 Pagination 中文文案，sidebar 的差异只是格式化。
    - QiuYe UI 本地定制：Typewriter `initialDelay`、use-prevent-scroll 的 `qvScrollLocked` 计数、MermaidBlock 按布局高度测量。其中 Typewriter 的 initialDelay 与 MermaidBlock 的修复是通用改进，值得回推到组件库；qvScrollLocked 是博客专用。
    - 调用处适配集中在参考图库（旧 Card 内边距覆盖、图片卡片贴边）。
-2. **FusionKit**：✅ 2026-10-13 完成，分支 `chore/shadcn-nova`（基于 `v0.5.0`），待合入。全量测试中 Electron 界面测试全部通过，测试截图已与迁移前逐张对比。注意：pnpm 8 不会执行 `pretest`，跑 Electron 界面测试前要先 `pnpm run pretest` 构建（FK-PIT-0191）；依赖变更需要重新记录溯源审计（FK-PIT-0186）。
+2. **FusionKit**：✅ 2026-10-14 完成（含两轮视觉回归修复），分支 `chore/shadcn-nova`（基于 `v0.5.0`），待合入。回归方法：迁移前后两个构建跑同一套场景（全部页面、弹出层、折叠区、带数据的工作台与翻译资料，两种窗口尺寸、浅深两色），对比截图与逐元素盒模型。全量测试中 Electron 界面测试全部通过，测试截图已与迁移前逐张对比。注意：pnpm 8 不会执行 `pretest`，跑 Electron 界面测试前要先 `pnpm run pretest` 构建（FK-PIT-0191）；依赖变更需要重新记录溯源审计（FK-PIT-0186）。
    - 真正要带到新版的定制：Dialog 的 `portal` / `asChild`（动画弹窗依赖）、Accordion（整份重写，保留原文件）、ScrollArea 的 `viewportRef` / `viewportProps`、Select 默认 `popper`、RadioGroupItem 透传 children；Switch 换成 nova 的 Radix 版。
    - SegmentedControl、ThemeTransitionToggle、Tour、ScrollableDialog 在 FusionKit 中已比组件库更新（竖排、多边形揭幕、animateSize 等），这次不从 registry 重装，只做 nova 适配；之后应把这些能力回推到组件库，再统一同步。
 
