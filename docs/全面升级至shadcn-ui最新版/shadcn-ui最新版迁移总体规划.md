@@ -54,6 +54,8 @@
 - **Card 子组件依赖 `--card-spacing`**：`CardHeader`、`CardContent`、`CardFooter` 的内边距来自 `<Card>` 上定义的 `--card-spacing`。如果脱离 `<Card>` 使用（例如包在自定义容器里），内边距会变成 0，需要在容器上补 `[--card-spacing:--spacing(4)]`，以及 `flex flex-col gap-(--card-spacing) py-(--card-spacing)`。
 - **Tooltip 不再自带 Provider**：需要在应用根部包一层 `TooltipProvider`。
 - **旧版 Card 的内边距覆盖会叠加**：更早的 shadcn Card（v3 时代）间距写在子组件上：CardHeader `p-6`、CardContent `p-6 pt-0`、CardTitle `text-2xl`，调用处常见 `p-4 md:p-6`、`pt-0`、`pb-2`、`pt-6` 之类的覆盖。nova 的间距在 Card 上（`py-4 gap-4`），这些覆盖会叠加，导致卡片变高，应当直接删除。CardTitle 默认变为 `text-base`。
+- **Dialog 默认变窄、Footer 变样**：nova 的 DialogContent 默认 `sm:max-w-sm`（384px，旧版 `sm:max-w-lg` 是 512px），用默认宽度的弹窗内容可能被挤压；DialogFooter 改为 `-mx-4 -mb-4` 负边距加 `bg-muted/50` 灰底，依赖 `p-4` 的内容区。内容较多的项目可以在本地 dialog 里保留 `sm:max-w-lg`。
+- **Select 默认 `position="item-aligned"`**：下拉菜单会覆盖在触发器上；习惯在下方弹出的项目要把默认值改回 `popper`。
 - **图片贴顶的卡片要加 `py-0 gap-0`**：nova 只在第一个子元素是 `<img>` 时自动去掉顶部内边距；图片外面包了 div、或卡片里只有图片时，需要手动加 `py-0`（必要时加 `gap-0`）。
 - **覆盖样式必须用同一个变体**：例如 nova 的 `group-data-horizontal/tabs:h-8`，只能用 `group-data-horizontal/tabs:h-auto` 覆盖，普通的 `h-auto` 不生效。已记录在 PIT-0007。
 
@@ -119,11 +121,13 @@
 
 ### 阶段 2：主力项目
 
-1. **qiuyedx-blog**（即 qiuvision）：✅ 2026-10-13 完成，分支 `chore/shadcn-nova`，待合入。
+1. **qiuyedx-blog**（即 qiuvision）：✅ 2026-10-13 完成并已合入 main。
    - 真正的自有定制只有 ScrollArea（viewportRef / viewportClassName）和 Pagination 中文文案，sidebar 的差异只是格式化。
    - QiuYe UI 本地定制：Typewriter `initialDelay`、use-prevent-scroll 的 `qvScrollLocked` 计数、MermaidBlock 按布局高度测量。其中 Typewriter 的 initialDelay 与 MermaidBlock 的修复是通用改进，值得回推到组件库；qvScrollLocked 是博客专用。
    - 调用处适配集中在参考图库（旧 Card 内边距覆盖、图片卡片贴边）。
-2. **FusionKit**：定制最重（dialog、switch、calendar、accordion），界面密度最高。可以借助现有的测试做回归验证。
+2. **FusionKit**：✅ 2026-10-13 完成，分支 `chore/shadcn-nova`（基于 `v0.5.0`），待合入。全量测试中 Electron 界面测试全部通过，测试截图已与迁移前逐张对比。注意：pnpm 8 不会执行 `pretest`，跑 Electron 界面测试前要先 `pnpm run pretest` 构建（FK-PIT-0191）；依赖变更需要重新记录溯源审计（FK-PIT-0186）。
+   - 真正要带到新版的定制：Dialog 的 `portal` / `asChild`（动画弹窗依赖）、Accordion（整份重写，保留原文件）、ScrollArea 的 `viewportRef` / `viewportProps`、Select 默认 `popper`、RadioGroupItem 透传 children；Switch 换成 nova 的 Radix 版。
+   - SegmentedControl、ThemeTransitionToggle、Tour、ScrollableDialog 在 FusionKit 中已比组件库更新（竖排、多边形揭幕、animateSize 等），这次不从 registry 重装，只做 nova 适配；之后应把这些能力回推到组件库，再统一同步。
 
 ### 阶段 3：模板与其余项目
 
