@@ -400,8 +400,9 @@ export function MermaidBlock({
     if (!element || typeof ResizeObserver === "undefined") return;
 
     let frameId = 0;
-    const updateHeight = () => {
-      const nextHeight = element.getBoundingClientRect().height;
+    const updateHeight = (entry?: ResizeObserverEntry) => {
+      const nextHeight =
+        entry?.borderBoxSize?.[0]?.blockSize ?? element.offsetHeight;
       if (nextHeight <= 0) return;
 
       setContentHeight((prevHeight) => {
@@ -418,9 +419,9 @@ export function MermaidBlock({
 
     updateHeight();
 
-    const resizeObserver = new ResizeObserver(() => {
+    const resizeObserver = new ResizeObserver(([entry]) => {
       cancelAnimationFrame(frameId);
-      frameId = requestAnimationFrame(updateHeight);
+      frameId = requestAnimationFrame(() => updateHeight(entry));
     });
     resizeObserver.observe(element);
 

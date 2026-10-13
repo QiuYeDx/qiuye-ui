@@ -2112,6 +2112,13 @@ export const componentRegistry: ComponentRegistry = {
         default: "90",
       },
       {
+        name: "initialDelay",
+        type: "number",
+        description: "首个字符出现前的延迟（毫秒），常用于等待入场动画结束后再开始打字",
+        required: false,
+        default: "0",
+      },
+      {
         name: "deletingSpeed",
         type: "number",
         description: "删除速度（毫秒/字符）",
@@ -2176,7 +2183,7 @@ export const componentRegistry: ComponentRegistry = {
         required: false,
       },
     ],
-    version: "1.0.0",
+    version: "1.1.0",
     author: "QiuYeDx",
     tags: [
       "typewriter",
@@ -2350,7 +2357,7 @@ export const componentRegistry: ComponentRegistry = {
         ],
       },
     ],
-    version: "1.0.0",
+    version: "1.0.1",
     author: "QiuYeDx",
     tags: [
       "markdown",

@@ -22,6 +22,11 @@ export interface TypewriterProps {
    */
   typingSpeed?: number;
   /**
+   * 首个字符出现前的延迟（毫秒），常用于等待入场动画结束后再开始打字
+   * @default 0
+   */
+  initialDelay?: number;
+  /**
    * 删除速度（毫秒/字符）
    * @default 45
    */
@@ -117,6 +122,7 @@ export interface TypewriterProps {
 export function Typewriter({
   phrases,
   typingSpeed = 90,
+  initialDelay = 0,
   deletingSpeed = 45,
   pauseDuration = 1800,
   switchInterval = 500,
@@ -135,6 +141,7 @@ export function Typewriter({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const measureRef = useRef<HTMLSpanElement>(null);
+  const hasStarted = useRef(false);
 
   const smoothWidth = useSpring(0, {
     stiffness: springConfig?.stiffness ?? 300,
@@ -160,6 +167,7 @@ export function Typewriter({
 
     const timeoutId = window.setTimeout(
       () => {
+        hasStarted.current = true;
         if (!isDeleting) {
           if (!isPhraseComplete) {
             setDisplayText(currentPhrase.slice(0, displayText.length + 1));
@@ -181,13 +189,15 @@ export function Typewriter({
         setIsDeleting(false);
         setPhraseIndex((i) => (i + 1) % safePhrases.length);
       },
-      isDeleting
-        ? isPhraseEmpty
-          ? switchInterval
-          : deletingSpeed
-        : isPhraseComplete
-          ? pauseDuration
-          : typingSpeed,
+      !hasStarted.current
+        ? initialDelay + typingSpeed
+        : isDeleting
+          ? isPhraseEmpty
+            ? switchInterval
+            : deletingSpeed
+          : isPhraseComplete
+            ? pauseDuration
+            : typingSpeed,
     );
 
     return () => window.clearTimeout(timeoutId);
@@ -196,6 +206,7 @@ export function Typewriter({
     deletingSpeed,
     displayText,
     isDone,
+    initialDelay,
     isDeleting,
     loop,
     pauseDuration,
