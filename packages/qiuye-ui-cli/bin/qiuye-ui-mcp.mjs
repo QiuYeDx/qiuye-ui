@@ -28,6 +28,7 @@ const DEFAULT_COMPONENT_NAMES = [
   "tour",
   "matrix-effect",
   "expandable-card",
+  "honeycomb-view",
 ];
 
 function parseArgs(argv) {

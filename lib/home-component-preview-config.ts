@@ -16,6 +16,7 @@ export const homePreviewConfigs: HomePreviewConfig[] = [
     size: "wide",
     featured: true,
   },
+  { id: ComponentId.HONEYCOMB_VIEW, size: "tall", featured: true },
   {
     id: ComponentId.DOT_GLASS,
     size: "wide",

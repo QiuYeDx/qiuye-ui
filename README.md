@@ -73,6 +73,7 @@ v1 快照不会再更新。组件之间的依赖（如 `@qiuye-ui/smooth-corners
 | [AnimatedNumber](https://ui.qiuyedx.com/components/animated-number) | `animated-number` | 逐位数字过渡，可选模糊、平滑宽度和 Intl 格式化。 |
 | [Clip Path Tabs](https://ui.qiuyedx.com/components/clip-path-tabs)                   | `clip-path-tabs`          | 使用 `clip-path` 完成背景与文字颜色过渡的标签组，支持连续和分段布局。                  |
 | [ExpandableCard](https://ui.qiuyedx.com/components/expandable-card) | `expandable-card` | App Store 风格展开卡片，从原位置连续放大为详情浮层，支持分层视差封面。 |
+| [HoneycombView](https://ui.qiuyedx.com/components/honeycomb-view) | `honeycomb-view` | Apple Watch 风格蜂窝图标视图，边缘图标连续缩小，支持四向拖动与上下滚动两种模式。 |
 | [Code Block](https://ui.qiuyedx.com/components/code-block)                           | `code-block`              | 代码块与文件面板，支持主题、行号、Diff、行高亮、折叠和复制。                           |
 | [Color Picker](https://ui.qiuyedx.com/components/color-picker)                       | `color-picker`            | HSV 取色器，支持 Alpha、触控、预设色、最近颜色和 Popover / Inline 模式。               |
 | [Dot Glass](https://ui.qiuyedx.com/components/dot-glass)                             | `dot-glass`               | 点阵开孔毛玻璃效果，用于 Header、Navbar 等前景容器。                                   |

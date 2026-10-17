@@ -147,6 +147,149 @@ const matrixEffectRuntimeProps: PropDefinition[] = [
 
 // 组件注册表
 export const componentRegistry: ComponentRegistry = {
+  [ComponentId.HONEYCOMB_VIEW]: {
+    name: "HoneycombView",
+    description:
+      "Apple Watch 风格的蜂窝图标视图：六边形密排，靠近边缘的图标连续缩小并向内收拢，支持四向自由拖动与仅上下滚动两种模式，带惯性、橡皮筋回弹与吸附。",
+    category: "内容与媒体",
+    dependencies: ["motion"],
+    files: {
+      component: "components/qiuye-ui/honeycomb-view.tsx",
+      demo: "components/qiuye-ui/demos/honeycomb-view-demo.tsx",
+    },
+    propsInfo: [
+      {
+        componentName: "HoneycombView",
+        props: [
+          {
+            name: "items",
+            type: "readonly T[]",
+            description:
+              "数据列表。",
+            required: true,
+          },
+          {
+            name: "renderItem",
+            type: "(item: T, index: number) => ReactNode",
+            description:
+              "渲染单个图标的视觉内容，按 itemSize 设计即可，缩放由组件统一处理；不要再嵌套按钮等可交互元素。",
+            required: true,
+          },
+          {
+            name: "getItemKey",
+            type: "(item: T, index: number) => Key",
+            description:
+              "返回 React key。",
+            required: false,
+            default: "index",
+          },
+          {
+            name: "getItemLabel",
+            type: "(item: T, index: number) => string",
+            description:
+              "返回图标的无障碍名称。",
+            required: false,
+          },
+          {
+            name: "onItemSelect",
+            type: "(item: T, index: number, element: HTMLElement) => void",
+            description:
+              "点击、回车或空格选中时触发，拖动后的松手不会触发；第三个参数是图标元素，便于从图标位置做打开动画。未传时图标不可聚焦。",
+            required: false,
+          },
+          {
+            name: "mode",
+            type: "\"free\" | \"vertical\"",
+            description:
+              "free 为四向自由拖动（watchOS 蜂窝视图），vertical 只能上下滚动（watchOS 10 网格视图）。",
+            required: false,
+            default: "\"free\"",
+          },
+          {
+            name: "layout",
+            type: "\"spiral\" | \"grid\"",
+            description:
+              "free 模式下的排布：spiral 从中心一圈圈向外，grid 为宽窄行交替的矩形蜂窝。vertical 模式固定为 grid。",
+            required: false,
+            default: "\"spiral\"",
+          },
+          {
+            name: "columns",
+            type: "number",
+            description:
+              "宽行的列数，窄行为 columns - 1。vertical 默认按视口宽度自动计算，free + grid 默认取接近正方形的列数。",
+            required: false,
+          },
+          {
+            name: "itemSize",
+            type: "number",
+            description:
+              "图标直径（px）。",
+            required: false,
+            default: "60",
+          },
+          {
+            name: "gap",
+            type: "number",
+            description:
+              "相邻图标的间距（px）。",
+            required: false,
+            default: "10",
+          },
+          {
+            name: "edgeWidth",
+            type: "number",
+            description:
+              "边缘缩放带的宽度（px）：图标中心距视口边缘小于该值时开始缩小，越靠近边缘越小，最终缩成贴着边缘内侧的小圆点。",
+            required: false,
+            default: "itemSize",
+          },
+          {
+            name: "cornerRadius",
+            type: "number",
+            description:
+              "视口圆角（px），让缩放带沿圆角屏幕弯曲：角落的图标比边中点更早缩小。默认读取根节点的 border-radius；圆角由外层容器裁切时需要手动传入。",
+            required: false,
+          },
+          {
+            name: "snap",
+            type: "boolean",
+            description:
+              "松手后吸附：free 让最近的图标停在正中，vertical 让某一行停在顶端。",
+            required: false,
+            default: "false",
+          },
+          {
+            name: "itemClassName",
+            type: "string",
+            description:
+              "每个图标按钮的类名（默认圆形焦点框；图标形状由 renderItem 决定）。",
+            required: false,
+          },
+          {
+            name: "className",
+            type: "string",
+            description:
+              "根节点类名；视口尺寸由调用方决定。",
+            required: false,
+          },
+          {
+            name: "aria-label",
+            type: "string",
+            description:
+              "根节点的无障碍名称。",
+            required: false,
+            default: "\"应用列表\"",
+          },
+        ],
+      },
+    ],
+    version: "1.0.0",
+    author: "QiuYeDx",
+    tags: ["Apple Watch", "蜂窝", "六边形", "鱼眼", "拖动", "惯性", "列表"],
+    cliName: "honeycomb-view",
+    basicUsage: basicUsageExamples[ComponentId.HONEYCOMB_VIEW],
+  },
   [ComponentId.EXPANDABLE_CARD]: {
     name: "ExpandableCard",
     description:

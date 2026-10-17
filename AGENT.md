@@ -29,6 +29,7 @@
 - `tour`
 - `matrix-effect`
 - `expandable-card`
+- `honeycomb-view`
 
 ## 核心目录
 

@@ -159,6 +159,24 @@
       "description": "App Store 风格的展开卡片：从原位置连续放大为居中详情浮层，支持分层视差封面、无重排滚动与无缝阴影交接。"
     },
     {
+      "name": "honeycomb-view",
+      "type": "registry:component",
+      "title": "HoneycombView",
+      "author": "QiuYeDx <me@qiuyedx.com>",
+      "dependencies": [
+        "motion"
+      ],
+      "registryDependencies": [],
+      "files": [
+        {
+          "path": "components/qiuye-ui/honeycomb-view.tsx",
+          "type": "registry:component",
+          "target": "components/qiuye-ui/honeycomb-view.tsx"
+        }
+      ],
+      "description": "Apple Watch 风格的蜂窝图标视图：六边形密排，靠近边缘的图标连续缩小并向内收拢，支持四向自由拖动与仅上下滚动两种模式，带惯性、橡皮筋回弹与吸附。"
+    },
+    {
       "name": "image-viewer",
       "type": "registry:component",
       "title": "ImageViewer",

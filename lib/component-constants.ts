@@ -23,6 +23,7 @@ export enum ComponentId {
   TOUR = "tour",
   MATRIX_EFFECT = "matrix-effect",
   EXPANDABLE_CARD = "expandable-card",
+  HONEYCOMB_VIEW = "honeycomb-view",
 }
 
 // 组件 ID 数组，方便遍历
@@ -38,6 +39,22 @@ export type BasicUsageExamples = Record<ComponentId, BasicUsageExample>;
 
 // 基础使用示例数据
 export const basicUsageExamples: BasicUsageExamples = {
+  [ComponentId.HONEYCOMB_VIEW]: {
+    import: `import { HoneycombView } from "@/components/qiuye-ui/honeycomb-view";`,
+    usage: `<HoneycombView
+  className="h-[360px] w-[300px] rounded-[56px] bg-black"
+  mode="free" // 或 "vertical"
+  items={apps}
+  getItemKey={(app) => app.id}
+  getItemLabel={(app) => app.name}
+  renderItem={(app) => (
+    <span className="flex size-full items-center justify-center rounded-full bg-blue-500 text-white">
+      <app.icon className="size-1/2" />
+    </span>
+  )}
+  onItemSelect={(app) => console.log(app.name)}
+/>`,
+  },
   [ComponentId.EXPANDABLE_CARD]: {
     import: `import { ExpandableCard } from "@/components/qiuye-ui/expandable-card";
 import { Button } from "@/components/ui/button";`,
