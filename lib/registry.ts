@@ -544,7 +544,7 @@ export const componentRegistry: ComponentRegistry = {
         ],
       },
     ],
-    version: "1.1.0",
+    version: "1.1.1",
     author: "QiuYeDx",
     tags: ["卡片", "App Store", "展开", "容器变形", "浮层", "视差", "详情"],
     cliName: "expandable-card",

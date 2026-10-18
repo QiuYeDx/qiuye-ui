@@ -261,8 +261,16 @@ function defaultCoverHeight({
 
 // 下拉关闭：位移越大阻力越大，浮层最多缩小到 0.8。
 const dragScale = (offset: number) => 1 - (0.2 * offset) / (offset + 200);
-const DISMISS_OFFSET = 110;
-const DISMISS_VELOCITY = 0.5; // px/ms
+// 松手时按减速投影估算落点（Apple 的 0.998 减速率），落点超过阈值即关闭。
+const DECELERATION = 0.998;
+const project = (velocity: number) =>
+  ((velocity / 1000) * DECELERATION) / (1 - DECELERATION);
+const DISMISS_DISTANCE = 140;
+// 速度取最近 100ms 的采样；松手前 50ms 没有移动视为停住。
+const VELOCITY_WINDOW = 100;
+const VELOCITY_IDLE = 50;
+// 遮罩随下拉渐淡，露出背后的内容。
+const dragFade = (offset: number) => 1 - 0.6 * Math.min(1, offset / 320);
 
 function readCard(element: HTMLElement) {
   const rect = element.getBoundingClientRect();
@@ -646,24 +654,30 @@ export function ExpandableCard({
   }, [phase]);
 
   // 下拉关闭：内容滚动到顶部时继续下拉，浮层随手指缩小；
-  // 松手时超过阈值（或快速下滑）则收起，否则弹回。
+  // 松手时按投影落点判定收起，否则带着松手速度弹回。
   const drag = useMotionValue(0);
   const sheetScale = useTransform(drag, dragScale);
   const sheetY = useTransform(drag, (offset) => offset * 0.12);
   const setOpenRef = React.useRef(setOpen);
   setOpenRef.current = setOpen;
 
+  // 用触摸事件而不是 Pointer Events：接管原生滚动必须在非 passive 的
+  // touchmove 中 preventDefault，而触屏指针一旦开始平移就会收到 pointercancel。
   React.useEffect(() => {
     const scroller = scrollRef.current;
     if (phase !== "open" || !scroller) return;
     let startX = 0;
     let startY = 0;
+    let base = 0;
     let tracking = false;
     let dragging = false;
-    let lastY = 0;
-    let lastTime = 0;
-    let velocity = 0;
+    let samples: { t: number; y: number }[] = [];
 
+    const begin = (y: number, time: number) => {
+      dragging = true;
+      startY = y;
+      samples = [{ t: time, y }];
+    };
     const onStart = (event: TouchEvent) => {
       if (event.touches.length !== 1) {
         tracking = false;
@@ -672,51 +686,60 @@ export function ExpandableCard({
       const touch = event.touches[0];
       startX = touch.clientX;
       startY = touch.clientY;
-      tracking = scroller.scrollTop <= 0;
       dragging = false;
+      // 弹回途中再次按住：停在当前偏移并从这里继续，而不是从 0 重新计算。
+      if (drag.isAnimating() || drag.get() > 0) {
+        drag.stop();
+        base = drag.get();
+        tracking = true;
+        begin(touch.clientY, event.timeStamp);
+        return;
+      }
+      base = 0;
+      tracking = scroller.scrollTop <= 0;
     };
     const onMove = (event: TouchEvent) => {
       if (!tracking) return;
       const touch = event.touches[0];
-      const dx = touch.clientX - startX;
-      const dy = touch.clientY - startY;
       if (!dragging) {
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
         // 只接管从顶部开始、以纵向下拉为主的手势；其余交给原生滚动。
         if (Math.abs(dx) > Math.abs(dy) || dy < 0 || scroller.scrollTop > 0) {
           if (Math.abs(dx) + Math.abs(dy) > 6) tracking = false;
           return;
         }
         if (dy < 6) return;
-        dragging = true;
-        startY = touch.clientY;
-        lastY = touch.clientY;
-        lastTime = event.timeStamp;
-        velocity = 0;
+        begin(touch.clientY, event.timeStamp);
       }
       event.preventDefault();
-      const elapsed = event.timeStamp - lastTime;
-      if (elapsed > 0) velocity = (touch.clientY - lastY) / elapsed;
-      lastY = touch.clientY;
-      lastTime = event.timeStamp;
-      drag.set(Math.max(0, touch.clientY - startY));
+      samples.push({ t: event.timeStamp, y: touch.clientY });
+      while (samples.length > 2 && event.timeStamp - samples[0].t > VELOCITY_WINDOW) {
+        samples.shift();
+      }
+      drag.set(Math.max(0, base + touch.clientY - startY));
     };
-    const onEnd = () => {
+    const onEnd = (event: TouchEvent) => {
       if (!dragging) {
         tracking = false;
         return;
       }
       tracking = false;
       dragging = false;
+      const first = samples[0];
+      const last = samples[samples.length - 1];
+      // px/s；与 drag 同单位，可直接作为弹簧的初速度。
+      const velocity =
+        last.t > first.t && event.timeStamp - last.t < VELOCITY_IDLE
+          ? ((last.y - first.y) / (last.t - first.t)) * 1000
+          : 0;
       const offset = drag.get();
-      if (
-        offset > DISMISS_OFFSET ||
-        (velocity > DISMISS_VELOCITY && offset > 24)
-      ) {
-        // 缩放随收起飞行同步回到 1，视觉尺寸连续落回卡片。
-        animate(drag, 0, SHEET_SPRING);
+      if (event.type === "touchend" && velocity >= 0 && offset + project(velocity) > DISMISS_DISTANCE) {
+        // 缩放随收起飞行用同一条弹簧、带着松手速度回到 1，从当前缩小的样子连续落回卡片。
+        animate(drag, 0, { ...SHEET_SPRING, velocity });
         setOpenRef.current(false);
       } else {
-        animate(drag, 0, SNAP_SPRING);
+        animate(drag, 0, { ...SNAP_SPRING, velocity });
       }
     };
 
@@ -735,6 +758,27 @@ export function ExpandableCard({
   React.useEffect(() => {
     if (phase === "closed") drag.jump(0);
   }, [phase, drag]);
+
+  // 遮罩的进出淡入与下拉渐淡相乘，写在同一元素上：
+  // 若拆成嵌套的两层透明度，外层 opacity < 1 会让内层的 backdrop-filter 失效。
+  const overlayFade = useMotionValue(0);
+  const overlayOpacity = useTransform(
+    [overlayFade, drag],
+    ([fade, offset]: number[]) => fade * dragFade(offset),
+  );
+  const overlayIn = phase === "opening" || phase === "open";
+  React.useLayoutEffect(() => {
+    if (!mounted) {
+      overlayFade.jump(0);
+      return;
+    }
+    const controls = animate(overlayFade, overlayIn ? 1 : 0, {
+      duration: overlayIn ? 0.32 : 0.22,
+      delay: overlayIn ? 0.06 : 0,
+      ease: EASE,
+    });
+    return () => controls.stop();
+  }, [mounted, overlayIn, overlayFade]);
 
   const settle = () => {
     setPhase((current) =>
@@ -870,13 +914,7 @@ export function ExpandableCard({
             <DialogPrimitive.Overlay forceMount asChild>
               <motion.div
                 className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[10px] backdrop-saturate-[1.1] dark:bg-black/50"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: expanded ? 1 : 0 }}
-                transition={{
-                  duration: expanded ? 0.32 : 0.22,
-                  delay: expanded ? 0.06 : 0,
-                  ease: EASE,
-                }}
+                style={{ opacity: overlayOpacity }}
               />
             </DialogPrimitive.Overlay>
             <DialogPrimitive.Content
