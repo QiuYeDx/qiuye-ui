@@ -176,13 +176,14 @@ function AppIcon({ app }: { app: DemoApp }) {
 const watchCode = `const [open, setOpen] = useState<DemoApp | null>(null);
 
 return (
-  <div className="relative h-[360px] w-[300px] overflow-hidden rounded-[56px] bg-black">
+  <div className="relative h-[360px] w-[300px] overflow-hidden rounded-[60px] bg-black">
     <HoneycombView
       className="size-full"
       mode={mode}          // "free" | "vertical"
       layout={layout}      // "spiral" | "grid"
       snap={snap}
-      cornerRadius={56}
+      cornerRadius={60}
+      itemSize={72}        // 视口宽度约为图标直径的 4 倍
       items={apps}
       getItemKey={(app) => app.id}
       getItemLabel={(app) => app.name}
@@ -217,26 +218,21 @@ interface WatchConfig {
   gap: number;
   /** null 时使用组件默认值（itemSize） */
   edgeWidth: number | null;
-  /** null 时使用组件默认值（vertical 0.4，free 0） */
+  /** null 时使用组件默认值（0.4） */
   curvature: number | null;
   count: number;
 }
 
+// 按 watchOS 的比例：视口宽度约为图标直径的 4 倍（上下滚动时宽行 4 个、首行 3 个）。
 const DEFAULT_CONFIG: WatchConfig = {
   width: 300,
   height: 360,
   radius: 60,
-  itemSize: 60,
+  itemSize: 72,
   gap: 10,
   edgeWidth: null,
   curvature: null,
   count: APPS.length,
-};
-
-// 上下滚动模式按 watchOS 10 的比例用更大的图标：视口宽度约为图标直径的 4 倍，宽行 4 个、首行 3 个。
-const VERTICAL_CONFIG: WatchConfig = {
-  ...DEFAULT_CONFIG,
-  itemSize: 72,
 };
 
 const COMPACT_CONFIG: WatchConfig = {
@@ -244,13 +240,12 @@ const COMPACT_CONFIG: WatchConfig = {
   width: 220,
   height: 264,
   radius: 46,
-  itemSize: 46,
+  itemSize: 53,
   gap: 7,
 };
 
-/** 与组件内部一致：edgeWidth 默认 free 为 itemSize，vertical 为 0.65 × itemSize。 */
-const defaultEdgeWidth = (mode: HoneycombViewMode, itemSize: number) =>
-  itemSize * (mode === "vertical" ? 0.65 : 1);
+/** 与组件内部一致：edgeWidth 默认为 0.65 × itemSize。 */
+const defaultEdgeWidth = (itemSize: number) => itemSize * 0.65;
 
 /** 表盘外壳 + 打开应用的放大转场（演示 onItemSelect 第三个参数的用法） */
 function WatchFrame({
@@ -258,11 +253,7 @@ function WatchFrame({
   layout,
   snap,
   compact = false,
-  config = compact
-    ? COMPACT_CONFIG
-    : mode === "vertical"
-      ? VERTICAL_CONFIG
-      : DEFAULT_CONFIG,
+  config = compact ? COMPACT_CONFIG : DEFAULT_CONFIG,
   showGuides = false,
   maxScreenWidth = "calc(100vw - 8.5rem)",
 }: {
@@ -280,7 +271,7 @@ function WatchFrame({
   const [launch, setLaunch] = useState<LaunchState | null>(null);
   const reducedMotion = useReducedMotion();
   const { width, height, radius } = config;
-  const edge = config.edgeWidth ?? defaultEdgeWidth(mode, config.itemSize);
+  const edge = config.edgeWidth ?? defaultEdgeWidth(config.itemSize);
   // 与组件内部一致：渐近线距视口边缘 0.18 · edgeWidth。
   const inset = edge * 0.18;
 
@@ -477,7 +468,7 @@ function ParamSlider({
 // 两种模式各自一套参数，默认值与上方「Apple Watch 主屏」示例相同。
 const PLAYGROUND_DEFAULTS: Record<HoneycombViewMode, WatchConfig> = {
   free: DEFAULT_CONFIG,
-  vertical: VERTICAL_CONFIG,
+  vertical: DEFAULT_CONFIG,
 };
 
 function HoneycombPlayground() {
@@ -487,8 +478,8 @@ function HoneycombPlayground() {
   const [snap, setSnap] = useState(true);
   const [showGuides, setShowGuides] = useState(true);
   const config = configs[mode];
-  const edge = config.edgeWidth ?? defaultEdgeWidth(mode, config.itemSize);
-  const curvature = config.curvature ?? (mode === "vertical" ? 0.4 : 0);
+  const edge = config.edgeWidth ?? defaultEdgeWidth(config.itemSize);
+  const curvature = config.curvature ?? 0.4;
   const update = (patch: Partial<WatchConfig>) =>
     setConfigs((prev) => ({ ...prev, [mode]: { ...prev[mode], ...patch } }));
   // 圆角不超过视口较短边的一半。
@@ -576,13 +567,7 @@ function HoneycombPlayground() {
             value={Math.round(edge)}
             min={0}
             max={160}
-            hint={
-              config.edgeWidth === null
-                ? mode === "vertical"
-                  ? "（默认 = 0.65 × itemSize）"
-                  : "（默认 = itemSize）"
-                : ""
-            }
+            hint={config.edgeWidth === null ? "（默认 = 0.65 × itemSize）" : ""}
             onChange={(value) => update({ edgeWidth: value })}
           />
           <ParamSlider
@@ -590,11 +575,7 @@ function HoneycombPlayground() {
             value={Math.round(curvature * 100)}
             min={0}
             max={90}
-            hint={
-              config.curvature === null
-                ? `%（默认，${mode === "vertical" ? "vertical 0.4" : "free 0"}）`
-                : "%"
-            }
+            hint={config.curvature === null ? "%（默认 0.4）" : "%"}
             onChange={(value) => update({ curvature: value / 100 })}
           />
           {sliderSpecs.map((spec) => (

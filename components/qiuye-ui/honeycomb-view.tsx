@@ -69,7 +69,7 @@ export interface HoneycombViewProps<T>
   /**
    * 边缘缩放带的宽度（px）：图标中心距视口边缘小于该值时开始缩小，
    * 越靠近边缘越小，最终缩成贴着边缘内侧的小圆点。越宽越早开始缩小。
-   * 默认 free 模式为 itemSize，vertical 模式为 0.65 × itemSize（层次主要来自 curvature）。
+   * 默认 0.65 × itemSize（层次主要来自 curvature，缩放带只负责最外一圈）。
    */
   edgeWidth?: number;
   /**
@@ -79,8 +79,7 @@ export interface HoneycombViewProps<T>
   cornerRadius?: number;
   /**
    * 球面感（0–0.9）：图标从视口中心向外整体逐渐缩小、间距随之收紧的程度，越大层次越明显。
-   * 默认 vertical 模式为 0.4（watchOS 10 网格视图，正中的图标最大），
-   * free 模式为 0（watchOS 蜂窝视图，中心区域等大）。
+   * 默认 0.4（按 watchOS 10 网格视图拟合，正中的图标最大）。
    */
   curvature?: number;
   /**
@@ -145,8 +144,6 @@ const SETTLE_SPRING = { type: "spring" as const, duration: 0.45, bounce: 0 };
 const WHEEL_SPRING = { type: "spring" as const, duration: 0.32, bounce: 0 };
 const INTRO_DURATION = 0.8;
 const INTRO_SPREAD = 0.4;
-// free 模式的平移边界：最外圈图标最远拖进缩放带的这一比例处（缩放约 0.8）。
-const FREE_REACH = 0.3;
 // 小圆点渐近线距视口边缘的距离，占缩放带宽度的比例。
 const EDGE_INSET = 0.18;
 // 缩放小于 FADE_START + FADE_RANGE 时开始淡出，挤在渐近线上的小圆点不会叠成一圈。
@@ -155,14 +152,15 @@ const FADE_RANGE = 0.07;
 const HIT_MIN_SCALE = 0.5;
 // 层级按缩放分档的数量。
 const Z_LEVELS = 40;
-// vertical 模式铺满视口：最外列外沿、首行顶边距视口边缘的距离（占 itemSize 的比例），
+// 铺满视口：最外列外沿、首行顶边距视口边缘的距离（占 itemSize 的比例），
 // 按 watchOS 10 网格截图测量；列距的拉伸范围。
 const FILL_INSET_X = 0.18;
 const FILL_INSET_Y = 0.28;
 const FILL_STRETCH_MIN = 0.9;
 const FILL_STRETCH_MAX = 1.1;
-// vertical 模式默认缩放带宽度（占 itemSize 的比例）。
-const VERTICAL_EDGE = 0.65;
+// 默认缩放带宽度（占 itemSize 的比例）与球面感：首行中心约在距顶端 0.65·itemSize 处。
+const DEFAULT_EDGE = 0.65;
+const DEFAULT_CURVATURE = 0.4;
 
 // 六边形轴向坐标的六个方向（尖顶朝上，横向成行）。
 const HEX_DIRECTIONS: ReadonlyArray<readonly [number, number]> = [
@@ -485,13 +483,10 @@ function HoneycombViewInner<T>(
     const { width, height } = size;
     if (!width || !height) return null;
     const spacing = itemSize + gap;
-    // vertical 模式的层次主要来自球面感，缩放带更窄：首行中心约在距顶端 0.65·itemSize 处。
-    const edge = Math.max(
-      1,
-      edgeWidth ?? itemSize * (vertical ? VERTICAL_EDGE : 1),
-    );
+    // 层次主要来自球面感，缩放带只负责把最外一圈压成贴边的小圆点。
+    const edge = Math.max(1, edgeWidth ?? itemSize * DEFAULT_EDGE);
     const band = edge * (1 - EDGE_INSET);
-    const k = clamp(curvature ?? (vertical ? 0.4 : 0), 0, 0.9);
+    const k = clamp(curvature ?? DEFAULT_CURVATURE, 0, 0.9);
     const halfX = width / 2;
     const halfY = height / 2;
     // 图标中心在虚拟坐标 x 处时，屏幕上外沿的位置（只计球面感；vertical 模式水平方向没有缩放带）。
@@ -556,7 +551,6 @@ function HoneycombViewInner<T>(
       0,
       Math.min(innerX, innerY),
     );
-    const reach = edge * FREE_REACH;
     // 平移边界、吸附与聚焦都在虚拟坐标中计算：把屏幕上的目标位置按球面感反算回去。
     const toVirtual = (screen: number, half: number) =>
       k > 0 ? inverseDomeRadius(screen / half, k) * half : screen;
@@ -566,16 +560,9 @@ function HoneycombViewInner<T>(
       height,
       points,
       rows,
-      // free 模式最外圈只拖到缩放带中段，视口边缘不留大片空白；
-      // vertical 模式首行停在满尺寸区域顶端。
-      boundsX: vertical
-        ? { min: 0, max: 0 }
-        : axisBounds(minX, maxX, toVirtual(innerX + reach, halfX)),
-      boundsY: axisBounds(
-        minY,
-        maxY,
-        vertical ? topY : toVirtual(innerY + reach, halfY),
-      ),
+      // 平移边界在下方按屏幕上的外沿求出，这里先占位。
+      boundsX: { min: 0, max: 0 },
+      boundsY: axisBounds(minY, maxY, topY),
       innerX,
       innerY,
       radius,
@@ -589,27 +576,32 @@ function HoneycombViewInner<T>(
       spacing,
       vertical,
     };
-    if (vertical) {
-      // 首行停靠：从中心往上找第一个「屏幕上的顶边」到达距视口顶端 FILL_INSET_Y·itemSize 的位置。
-      // 图标越往上越小，只按中心停靠会在顶端留下一大片空白。
-      const target = -halfY + itemSize * FILL_INSET_Y;
-      let stop = topY;
-      let best = Infinity;
-      for (let v = 0; v <= halfY * 3; v += 1) {
-        const mapped = mapToScreen(0, -v, g);
-        const top = mapped.y - (mapped.scale * itemSize) / 2;
-        if (top <= target) {
-          stop = v;
-          break;
-        }
-        if (top < best) {
-          best = top;
+    // 平移边界（两种模式一致）：沿各轴从中心向外，找第一个「屏幕上的外沿」到达
+    // 距视口边缘 FILL_INSET·itemSize 的位置，最外一圈刚好铺到边缘。
+    // 图标越往外越小，只按中心停靠会在边缘留下一大片空白。
+    const findStop = (axis: "x" | "y", target: number) => {
+      let stop = 0;
+      let best = -Infinity;
+      for (let v = 0; v <= (axis === "x" ? halfX : halfY) * 3; v += 1) {
+        const mapped = axis === "x" ? mapToScreen(v, 0, g) : mapToScreen(0, v, g);
+        const outer =
+          (axis === "x" ? mapped.x : mapped.y) + (mapped.scale * itemSize) / 2;
+        if (outer >= target) return v;
+        if (outer > best) {
+          best = outer;
           stop = v;
         }
       }
-      g.topY = stop;
-      g.boundsY = axisBounds(minY, maxY, stop);
-      g.revealY = Math.min(g.revealY, stop);
+      return stop;
+    };
+    const stopY = findStop("y", halfY - itemSize * FILL_INSET_Y);
+    g.topY = stopY;
+    g.boundsY = axisBounds(minY, maxY, stopY);
+    g.revealY = Math.min(g.revealY, stopY);
+    if (!vertical) {
+      const stopX = findStop("x", halfX - itemSize * FILL_INSET_X);
+      g.boundsX = axisBounds(minX, maxX, stopX);
+      g.revealX = Math.min(g.revealX, stopX);
     }
     return g;
   }, [

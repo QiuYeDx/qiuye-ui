@@ -240,9 +240,9 @@ export const componentRegistry: ComponentRegistry = {
             name: "edgeWidth",
             type: "number",
             description:
-              "边缘缩放带的宽度（px）：图标中心距视口边缘小于该值时开始缩小，越靠近边缘越小，最终缩成贴着边缘内侧的小圆点。vertical 模式的层次主要来自 curvature，缩放带更窄。",
+              "边缘缩放带的宽度（px）：图标中心距视口边缘小于该值时开始缩小，越靠近边缘越小，最终缩成贴着边缘内侧的小圆点。层次主要来自 curvature，缩放带只负责最外一圈。",
             required: false,
-            default: "free：itemSize；vertical：0.65 × itemSize",
+            default: "0.65 × itemSize",
           },
           {
             name: "cornerRadius",
@@ -255,8 +255,9 @@ export const componentRegistry: ComponentRegistry = {
             name: "curvature",
             type: "number",
             description:
-              "球面感（0–0.9）：图标从视口中心向外整体逐渐缩小、间距随之收紧的程度。vertical 默认 0.4（watchOS 10 网格，正中的图标最大），free 默认 0（中心区域等大）。",
+              "球面感（0–0.9）：图标从视口中心向外整体逐渐缩小、间距随之收紧的程度，正中的图标最大。按 watchOS 10 网格拟合。",
             required: false,
+            default: "0.4",
           },
           {
             name: "snap",
