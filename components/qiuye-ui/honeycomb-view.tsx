@@ -146,9 +146,10 @@ const INTRO_DURATION = 0.8;
 const INTRO_SPREAD = 0.4;
 // 小圆点渐近线距视口边缘的距离，占缩放带宽度的比例。
 const EDGE_INSET = 0.18;
-// 缩放小于 FADE_START + FADE_RANGE 时开始淡出，挤在渐近线上的小圆点不会叠成一圈。
-const FADE_START = 0.03;
-const FADE_RANGE = 0.07;
+// 缩放小于 FADE_START + FADE_RANGE 时开始淡出、小于 FADE_START 时消失：边缘只留一圈小圆点，
+// 更远处挤在渐近线上的细小图标不再叠成一层（真机截图中最外一圈约 0.15–0.2）。
+const FADE_START = 0.16;
+const FADE_RANGE = 0.08;
 const HIT_MIN_SCALE = 0.5;
 // 层级按缩放分档的数量。
 const Z_LEVELS = 40;
