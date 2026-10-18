@@ -217,6 +217,8 @@ interface WatchConfig {
   gap: number;
   /** null 时使用组件默认值（itemSize） */
   edgeWidth: number | null;
+  /** null 时使用组件默认值（vertical 0.4，free 0） */
+  curvature: number | null;
   count: number;
 }
 
@@ -227,7 +229,14 @@ const DEFAULT_CONFIG: WatchConfig = {
   itemSize: 60,
   gap: 10,
   edgeWidth: null,
+  curvature: null,
   count: APPS.length,
+};
+
+// 上下滚动模式按 watchOS 10 的比例用更大的图标：视口宽度约为图标直径的 4 倍，宽行 4 个、首行 3 个。
+const VERTICAL_CONFIG: WatchConfig = {
+  ...DEFAULT_CONFIG,
+  itemSize: 72,
 };
 
 const COMPACT_CONFIG: WatchConfig = {
@@ -245,7 +254,11 @@ function WatchFrame({
   layout,
   snap,
   compact = false,
-  config = compact ? COMPACT_CONFIG : DEFAULT_CONFIG,
+  config = compact
+    ? COMPACT_CONFIG
+    : mode === "vertical"
+      ? VERTICAL_CONFIG
+      : DEFAULT_CONFIG,
   showGuides = false,
   maxScreenWidth = "calc(100vw - 8.5rem)",
 }: {
@@ -325,6 +338,7 @@ function WatchFrame({
             itemSize={config.itemSize}
             gap={config.gap}
             edgeWidth={config.edgeWidth ?? undefined}
+            curvature={config.curvature ?? undefined}
             items={
               config.count < APPS.length ? APPS.slice(0, config.count) : APPS
             }
@@ -406,7 +420,7 @@ function WatchFrame({
 }
 
 const sliderSpecs: Array<{
-  key: Exclude<keyof WatchConfig, "edgeWidth">;
+  key: Exclude<keyof WatchConfig, "edgeWidth" | "curvature">;
   label: string;
   min: number;
   max: number;
@@ -460,9 +474,10 @@ function HoneycombPlayground() {
   const [config, setConfig] = useState<WatchConfig>(DEFAULT_CONFIG);
   const [mode, setMode] = useState<HoneycombViewMode>("free");
   const [layout, setLayout] = useState<HoneycombViewLayout>("spiral");
-  const [snap, setSnap] = useState(false);
+  const [snap, setSnap] = useState(true);
   const [showGuides, setShowGuides] = useState(true);
   const edge = config.edgeWidth ?? config.itemSize;
+  const curvature = config.curvature ?? (mode === "vertical" ? 0.4 : 0);
   const update = (patch: Partial<WatchConfig>) =>
     setConfig((prev) => ({ ...prev, ...patch }));
   // 圆角不超过视口较短边的一半。
@@ -477,8 +492,9 @@ function HoneycombPlayground() {
     `  itemSize={${config.itemSize}}`,
     `  gap={${config.gap}}`,
     config.edgeWidth === null ? null : `  edgeWidth={${config.edgeWidth}}`,
+    config.curvature === null ? null : `  curvature={${config.curvature}}`,
     `  cornerRadius={${radius}}`,
-    snap ? `  snap` : null,
+    snap ? null : `  snap={false}`,
     `  items={apps}`,
     `  renderItem={(app) => <AppIcon app={app} />}`,
     `/>`,
@@ -499,7 +515,7 @@ function HoneycombPlayground() {
                 setConfig(DEFAULT_CONFIG);
                 setMode("free");
                 setLayout("spiral");
-                setSnap(false);
+                setSnap(true);
               }}
             >
               <RotateCcw className="size-3.5" />
@@ -509,7 +525,7 @@ function HoneycombPlayground() {
           </div>
         </div>
         <CardDescription>
-          实时调整参数观察效果。白色虚线是满尺寸区域的边界，蓝色虚线是边缘小圆点的渐近线（上下滚动模式中各列在水平方向不缩放）。
+          实时调整参数观察效果。白色虚线是满尺寸区域的边界，蓝色虚线是边缘小圆点的渐近线（上下滚动模式中缩放带只作用于上下两端）。
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-8 lg:flex-row lg:items-start lg:justify-center lg:gap-14">
@@ -552,6 +568,18 @@ function HoneycombPlayground() {
             hint={config.edgeWidth === null ? "（默认 = itemSize）" : ""}
             onChange={(value) => update({ edgeWidth: value })}
           />
+          <ParamSlider
+            label="球面感 curvature"
+            value={Math.round(curvature * 100)}
+            min={0}
+            max={90}
+            hint={
+              config.curvature === null
+                ? `%（默认，${mode === "vertical" ? "vertical 0.4" : "free 0"}）`
+                : "%"
+            }
+            onChange={(value) => update({ curvature: value / 100 })}
+          />
           {sliderSpecs.map((spec) => (
             <ParamSlider
               key={spec.key}
@@ -592,7 +620,7 @@ export function HoneycombViewPreview() {
       <WatchFrame
         mode="free"
         layout="spiral"
-        snap={false}
+        snap
         compact
         maxScreenWidth="calc(100cqw - 1.5rem)"
       />
@@ -604,7 +632,7 @@ export function HoneycombViewPreview() {
 export function HoneycombViewDemo() {
   const [mode, setMode] = useState<HoneycombViewMode>("free");
   const [layout, setLayout] = useState<HoneycombViewLayout>("spiral");
-  const [snap, setSnap] = useState(false);
+  const [snap, setSnap] = useState(true);
 
   return (
     <div className="space-y-6">
@@ -667,8 +695,8 @@ export function HoneycombViewDemo() {
               />
             </div>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              靠近边缘的图标按「空间被压缩多少就缩小多少」连续缩小并向内收拢；
-              上下滚动模式中各列保持满尺寸，只有顶部和底部缩小。
+              靠近边缘的图标按「空间被压缩多少就缩小多少」连续缩小并向内收拢。
+              上下滚动模式参照 watchOS 10 网格：首行 3 个，正中的图标最大、向外逐渐变小。
             </p>
           </div>
         </CardContent>

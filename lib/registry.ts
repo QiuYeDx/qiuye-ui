@@ -217,7 +217,7 @@ export const componentRegistry: ComponentRegistry = {
             name: "columns",
             type: "number",
             description:
-              "宽行的列数，窄行为 columns - 1。vertical 默认按视口宽度自动计算，free + grid 默认取接近正方形的列数。",
+              "宽行的列数，窄行为 columns - 1。vertical 默认取视口放得下的最大列数（越往外图标越小，能多放一列），并微调列距让最外列铺到视口边缘；free + grid 默认取接近正方形的列数。",
             required: false,
           },
           {
@@ -240,9 +240,9 @@ export const componentRegistry: ComponentRegistry = {
             name: "edgeWidth",
             type: "number",
             description:
-              "边缘缩放带的宽度（px）：图标中心距视口边缘小于该值时开始缩小，越靠近边缘越小，最终缩成贴着边缘内侧的小圆点。",
+              "边缘缩放带的宽度（px）：图标中心距视口边缘小于该值时开始缩小，越靠近边缘越小，最终缩成贴着边缘内侧的小圆点。vertical 模式的层次主要来自 curvature，缩放带更窄。",
             required: false,
-            default: "itemSize",
+            default: "free：itemSize；vertical：0.65 × itemSize",
           },
           {
             name: "cornerRadius",
@@ -252,12 +252,19 @@ export const componentRegistry: ComponentRegistry = {
             required: false,
           },
           {
+            name: "curvature",
+            type: "number",
+            description:
+              "球面感（0–0.9）：图标从视口中心向外整体逐渐缩小、间距随之收紧的程度。vertical 默认 0.4（watchOS 10 网格，正中的图标最大），free 默认 0（中心区域等大）。",
+            required: false,
+          },
+          {
             name: "snap",
             type: "boolean",
             description:
               "松手后吸附：free 让最近的图标停在正中，vertical 让某一行停在顶端。",
             required: false,
-            default: "false",
+            default: "true",
           },
           {
             name: "itemClassName",

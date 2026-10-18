@@ -53,7 +53,7 @@ export interface HoneycombViewProps<T>
   layout?: HoneycombViewLayout;
   /**
    * 宽行的列数，窄行为 `columns - 1`。
-   * vertical 模式默认按视口宽度自动计算；free + grid 默认取接近正方形的列数。
+   * vertical 模式默认取视口放得下的最大列数，并微调列距铺满宽度；free + grid 默认取接近正方形的列数。
    */
   columns?: number;
   /**
@@ -69,7 +69,7 @@ export interface HoneycombViewProps<T>
   /**
    * 边缘缩放带的宽度（px）：图标中心距视口边缘小于该值时开始缩小，
    * 越靠近边缘越小，最终缩成贴着边缘内侧的小圆点。越宽越早开始缩小。
-   * @default itemSize
+   * 默认 free 模式为 itemSize，vertical 模式为 0.65 × itemSize（层次主要来自 curvature）。
    */
   edgeWidth?: number;
   /**
@@ -78,8 +78,14 @@ export interface HoneycombViewProps<T>
    */
   cornerRadius?: number;
   /**
+   * 球面感（0–0.9）：图标从视口中心向外整体逐渐缩小、间距随之收紧的程度，越大层次越明显。
+   * 默认 vertical 模式为 0.4（watchOS 10 网格视图，正中的图标最大），
+   * free 模式为 0（watchOS 蜂窝视图，中心区域等大）。
+   */
+  curvature?: number;
+  /**
    * 松手后吸附：free 模式让最近的图标停在正中，vertical 模式让某一行停在顶端
-   * @default false
+   * @default true
    */
   snap?: boolean;
   /** 每个图标外层的类名（默认圆形焦点框；图标形状由 renderItem 决定） */
@@ -109,6 +115,15 @@ interface Geometry {
   radius: number;
   /** 从满尺寸区域到小圆点渐近线的距离 */
   band: number;
+  /** 球面感与归一化用的视口半宽、半高 */
+  curvature: number;
+  halfX: number;
+  halfY: number;
+  /** vertical 模式中让首行停在满尺寸区域顶端的虚拟坐标 */
+  topY: number;
+  /** 键盘聚焦时要把图标移进的范围（虚拟坐标） */
+  revealX: number;
+  revealY: number;
   spacing: number;
   vertical: boolean;
 }
@@ -140,6 +155,14 @@ const FADE_RANGE = 0.07;
 const HIT_MIN_SCALE = 0.5;
 // 层级按缩放分档的数量。
 const Z_LEVELS = 40;
+// vertical 模式铺满视口：最外列外沿、首行顶边距视口边缘的距离（占 itemSize 的比例），
+// 按 watchOS 10 网格截图测量；列距的拉伸范围。
+const FILL_INSET_X = 0.18;
+const FILL_INSET_Y = 0.28;
+const FILL_STRETCH_MIN = 0.9;
+const FILL_STRETCH_MAX = 1.1;
+// vertical 模式默认缩放带宽度（占 itemSize 的比例）。
+const VERTICAL_EDGE = 0.65;
 
 // 六边形轴向坐标的六个方向（尖顶朝上，横向成行）。
 const HEX_DIRECTIONS: ReadonlyArray<readonly [number, number]> = [
@@ -177,13 +200,23 @@ function spiralLayout(count: number, spacing: number) {
   return { points, rows };
 }
 
-/** 宽窄行交替：宽行 columns 个，窄行 columns - 1 个，窄行落在宽行两个图标之间。 */
-function gridLayout(count: number, spacing: number, columns: number) {
+/**
+ * 宽窄行交替：宽行 columns 个，窄行 columns - 1 个，窄行落在宽行两个图标之间。
+ * startNarrow 时从窄行开始（watchOS 10 网格视图的首行是 3 个）。
+ */
+function gridLayout(
+  count: number,
+  spacing: number,
+  columns: number,
+  startNarrow = false,
+) {
   const points: Point[] = [];
   const rows: number[] = [];
   const wide = Math.max(1, Math.round(columns));
+  const shift = startNarrow && wide > 1 ? 1 : 0;
   for (let row = 0; points.length < count; row++) {
-    const size = row % 2 === 0 || wide === 1 ? wide : wide - 1;
+    const narrow = (row + shift) % 2 === 1;
+    const size = !narrow || wide === 1 ? wide : wide - 1;
     const offset = wide === 1 && row % 2 === 1 ? spacing / 2 : 0;
     for (let col = 0; col < size && points.length < count; col++) {
       points.push({
@@ -281,10 +314,51 @@ function lookupEdge(u: number) {
 }
 
 /**
- * 把相对视口中心的点映射到屏幕：满尺寸区域（视口内缩 edgeWidth 的圆角矩形）内保持不变；
- * 区域外按到区域的最近距离沿法线方向压缩，并按查找表缩小。
+ * 球面感：按到视口中心的归一化椭圆距离 ρ（视口边缘为 1）整体缩小，
+ * 缩放 `1 - k·ρ^1.5`，位置取它沿径向的积分，间距随图标一起收紧。
+ * 按 watchOS 10 网格截图拟合：ρ≈0.5 处约 0.86，ρ≈0.85 处约 0.65。ρ > 1 后保持 1 - k，
+ * 剩下的交给边缘缩放带。
  */
-function mapToScreen(x: number, y: number, g: Geometry) {
+const DOME_POWER = 1.5;
+
+function domeScale(rho: number, k: number) {
+  return 1 - k * Math.pow(Math.min(rho, 1), DOME_POWER);
+}
+
+function domeRadius(rho: number, k: number) {
+  if (rho <= 1) return rho - (k * Math.pow(rho, DOME_POWER + 1)) / (DOME_POWER + 1);
+  return 1 - k / (DOME_POWER + 1) + (1 - k) * (rho - 1);
+}
+
+/** domeRadius 的反函数（单调递增，二分即可）。 */
+function inverseDomeRadius(target: number, k: number) {
+  let low = 0;
+  let high = Math.max(1, target / (1 - k) + 1);
+  for (let step = 0; step < 40; step++) {
+    const mid = (low + high) / 2;
+    if (domeRadius(mid, k) < target) low = mid;
+    else high = mid;
+  }
+  return (low + high) / 2;
+}
+
+/**
+ * 把相对视口中心的点映射到屏幕：先按球面感整体收缩；满尺寸区域（视口内缩 edgeWidth 的圆角矩形）
+ * 内不再变化，区域外按到区域的最近距离沿法线方向压缩，并按查找表缩小。
+ */
+function mapToScreen(px: number, py: number, g: Geometry) {
+  let x = px;
+  let y = py;
+  let dome = 1;
+  if (g.curvature > 0) {
+    const rho = Math.hypot(x / g.halfX, y / g.halfY);
+    if (rho > 1e-6) {
+      const factor = domeRadius(rho, g.curvature) / rho;
+      x *= factor;
+      y *= factor;
+      dome = domeScale(rho, g.curvature);
+    }
+  }
   const coreX = g.innerX - g.radius;
   const coreY = g.innerY - g.radius;
   const cx = clamp(x, -coreX, coreX);
@@ -292,13 +366,13 @@ function mapToScreen(x: number, y: number, g: Geometry) {
   const dx = x - cx;
   const dy = y - cy;
   const distance = Math.hypot(dx, dy);
-  if (distance <= g.radius) return { x, y, scale: 1 };
+  if (distance <= g.radius) return { x, y, scale: dome };
   const reached = lookupEdge((distance - g.radius) / g.band);
   const reach = g.radius + reached * g.band;
   return {
     x: cx + (dx / distance) * reach,
     y: cy + (dy / distance) * reach,
-    scale: edgeProfile(reached),
+    scale: edgeProfile(reached) * dome,
   };
 }
 
@@ -347,7 +421,8 @@ function HoneycombViewInner<T>(
     gap = 10,
     edgeWidth,
     cornerRadius,
-    snap = false,
+    curvature,
+    snap = true,
     itemClassName,
     className,
     style,
@@ -410,15 +485,57 @@ function HoneycombViewInner<T>(
     const { width, height } = size;
     if (!width || !height) return null;
     const spacing = itemSize + gap;
-    const edge = Math.max(1, edgeWidth ?? itemSize);
+    // vertical 模式的层次主要来自球面感，缩放带更窄：首行中心约在距顶端 0.65·itemSize 处。
+    const edge = Math.max(
+      1,
+      edgeWidth ?? itemSize * (vertical ? VERTICAL_EDGE : 1),
+    );
     const band = edge * (1 - EDGE_INSET);
+    const k = clamp(curvature ?? (vertical ? 0.4 : 0), 0, 0.9);
+    const halfX = width / 2;
+    const halfY = height / 2;
+    // 图标中心在虚拟坐标 x 处时，屏幕上外沿的位置（只计球面感；vertical 模式水平方向没有缩放带）。
+    const outerEdge = (x: number) => {
+      const rho = x / halfX;
+      return k > 0
+        ? domeRadius(rho, k) * halfX + (domeScale(rho, k) * itemSize) / 2
+        : x + itemSize / 2;
+    };
+    const fillTarget = halfX - itemSize * FILL_INSET_X;
+    // vertical 模式取最外列放得下的最大列数：越往外图标越小、越密，能比按满尺寸计算多放一列。
+    let fitColumns = 2;
+    while (
+      fitColumns < 12 &&
+      outerEdge((fitColumns / 2) * spacing) <= fillTarget
+    ) {
+      fitColumns++;
+    }
     const autoColumns = vertical
-      ? Math.max(2, Math.floor((width - gap * 2 + gap) / spacing))
+      ? fitColumns
       : Math.max(2, Math.round(Math.sqrt(count * 1.15)));
-    const { points, rows } =
+    const layoutResult =
       vertical || layout === "grid"
-        ? gridLayout(count, spacing, columns ?? autoColumns)
+        ? gridLayout(count, spacing, columns ?? autoColumns, vertical)
         : spiralLayout(count, spacing);
+    const { rows } = layoutResult;
+    let { points } = layoutResult;
+    if (vertical && points.length) {
+      // 横向铺满：列数取整后两侧仍有余量，小幅调整列距，让最外列图标的外沿正好停在
+      // 距视口边缘 FILL_INSET_X·itemSize 处（与 watchOS 10 网格一致）。只微调列距，保持蜂窝比例。
+      const widest = Math.max(...points.map((point) => Math.abs(point.x)));
+      if (widest > 0) {
+        const target = fillTarget;
+        let low = 0;
+        let high = halfX * 3;
+        for (let step = 0; step < 40; step++) {
+          const mid = (low + high) / 2;
+          if (outerEdge(mid) < target) low = mid;
+          else high = mid;
+        }
+        const stretch = clamp(low / widest, FILL_STRETCH_MIN, FILL_STRETCH_MAX);
+        points = points.map((point) => ({ x: point.x * stretch, y: point.y }));
+      }
+    }
     let minX = 0;
     let maxX = 0;
     let minY = 0;
@@ -440,7 +557,11 @@ function HoneycombViewInner<T>(
       Math.min(innerX, innerY),
     );
     const reach = edge * FREE_REACH;
-    return {
+    // 平移边界、吸附与聚焦都在虚拟坐标中计算：把屏幕上的目标位置按球面感反算回去。
+    const toVirtual = (screen: number, half: number) =>
+      k > 0 ? inverseDomeRadius(screen / half, k) * half : screen;
+    const topY = toVirtual(innerY, halfY);
+    const g: Geometry = {
       width,
       height,
       points,
@@ -449,21 +570,55 @@ function HoneycombViewInner<T>(
       // vertical 模式首行停在满尺寸区域顶端。
       boundsX: vertical
         ? { min: 0, max: 0 }
-        : axisBounds(minX, maxX, innerX + reach),
-      boundsY: axisBounds(minY, maxY, vertical ? innerY : innerY + reach),
+        : axisBounds(minX, maxX, toVirtual(innerX + reach, halfX)),
+      boundsY: axisBounds(
+        minY,
+        maxY,
+        vertical ? topY : toVirtual(innerY + reach, halfY),
+      ),
       innerX,
       innerY,
       radius,
       band,
+      curvature: k,
+      halfX,
+      halfY,
+      topY,
+      revealX: toVirtual(Math.max(0, innerX - itemSize / 2), halfX),
+      revealY: toVirtual(Math.max(0, innerY - itemSize / 2), halfY),
       spacing,
       vertical,
     };
+    if (vertical) {
+      // 首行停靠：从中心往上找第一个「屏幕上的顶边」到达距视口顶端 FILL_INSET_Y·itemSize 的位置。
+      // 图标越往上越小，只按中心停靠会在顶端留下一大片空白。
+      const target = -halfY + itemSize * FILL_INSET_Y;
+      let stop = topY;
+      let best = Infinity;
+      for (let v = 0; v <= halfY * 3; v += 1) {
+        const mapped = mapToScreen(0, -v, g);
+        const top = mapped.y - (mapped.scale * itemSize) / 2;
+        if (top <= target) {
+          stop = v;
+          break;
+        }
+        if (top < best) {
+          best = top;
+          stop = v;
+        }
+      }
+      g.topY = stop;
+      g.boundsY = axisBounds(minY, maxY, stop);
+      g.revealY = Math.min(g.revealY, stop);
+    }
+    return g;
   }, [
     size,
     itemSize,
     gap,
     edgeWidth,
     cornerRadius,
+    curvature,
     vertical,
     layout,
     columns,
@@ -632,7 +787,7 @@ function HoneycombViewInner<T>(
           const rowY = new Map<number, number>();
           g.points.forEach((point, index) => rowY.set(g.rows[index], point.y));
           rowY.forEach((y) => {
-            const candidate = clamp(-g.innerY - y, g.boundsY.min, g.boundsY.max);
+            const candidate = clamp(-g.topY - y, g.boundsY.min, g.boundsY.max);
             const distance = Math.abs(candidate - projectedY);
             if (distance < best) {
               best = distance;
@@ -794,8 +949,16 @@ function HoneycombViewInner<T>(
       wheel.x = nextX;
       wheel.y = nextY;
     };
+    // iOS 上仅靠 touch-action 有时仍会接管手势；按下后阻止 touchmove 的默认行为。
+    const onTouchMove = (event: TouchEvent) => {
+      if (dragRef.current) event.preventDefault();
+    };
     node.addEventListener("wheel", onWheel, { passive: false });
-    return () => node.removeEventListener("wheel", onWheel);
+    node.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => {
+      node.removeEventListener("wheel", onWheel);
+      node.removeEventListener("touchmove", onTouchMove);
+    };
   }, [offsetX, offsetY]);
 
   /** 键盘聚焦时把图标平移进满尺寸区域。 */
@@ -804,8 +967,8 @@ function HoneycombViewInner<T>(
       const g = geometryRef.current;
       const point = g?.points[index];
       if (!g || !point) return;
-      const limitX = Math.max(0, g.innerX - itemSize / 2);
-      const limitY = Math.max(0, g.innerY - itemSize / 2);
+      const limitX = g.revealX;
+      const limitY = g.revealY;
       const x = point.x + offsetX.get();
       const y = point.y + offsetY.get();
       const targetX = clamp(
@@ -824,7 +987,7 @@ function HoneycombViewInner<T>(
       }
       if (targetY !== offsetY.get()) animate(offsetY, targetY, spring);
     },
-    [itemSize, offsetX, offsetY, reducedMotion],
+    [offsetX, offsetY, reducedMotion],
   );
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -883,7 +1046,7 @@ function HoneycombViewInner<T>(
       aria-label={ariaLabel}
       {...props}
       className={cn(
-        "relative touch-none overflow-hidden overscroll-contain select-none [-webkit-tap-highlight-color:transparent]",
+        "relative touch-none overflow-hidden overscroll-contain select-none [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]",
         "cursor-grab data-dragging:cursor-grabbing data-dragging:*:cursor-grabbing",
         className,
       )}
@@ -900,6 +1063,10 @@ function HoneycombViewInner<T>(
       }}
       onLostPointerCapture={(event) => {
         props.onLostPointerCapture?.(event);
+        // 触屏按下时浏览器会把指针隐式捕获到手指下的元素（图标内部的 svg 等），
+        // 拖动开始后改由根节点捕获，原元素会冒泡上来一个 lostpointercapture，
+        // 不能把它当成拖动结束；只处理根节点自己失去捕获。
+        if (event.target !== event.currentTarget) return;
         if (dragRef.current?.dragging) endDrag(event, false);
       }}
       onKeyDown={handleKeyDown}
