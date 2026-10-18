@@ -34,7 +34,8 @@ export interface HoneycombViewProps<T>
   getItemLabel?: (item: T, index: number) => string;
   /**
    * 点击、回车或空格选中图标时触发；拖动后的松手不会触发。
-   * 第三个参数是图标元素，便于从图标位置做打开动画。
+   * 第三个参数是图标的定位元素（屏幕上的位置与缩放，不含按下时的按压缩放），
+   * 便于从图标位置做打开动画：它的 getBoundingClientRect 就是图标静止时的矩形。
    * 未传时图标不可聚焦、不可点击。
    */
   onItemSelect?: (item: T, index: number, element: HTMLElement) => void;
@@ -1117,7 +1118,12 @@ function HoneycombViewInner<T>(
                         event.preventDefault();
                         return;
                       }
-                      onItemSelect?.(item, index, event.currentTarget);
+                      // 交给定位元素而不是按钮：按钮在松手后还在从按压缩放中恢复，量出来会偏小。
+                      onItemSelect?.(
+                        item,
+                        index,
+                        itemRefs.current[index] ?? event.currentTarget,
+                      );
                     }
                   : undefined
               }

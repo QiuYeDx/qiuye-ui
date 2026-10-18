@@ -1,7 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+  type MotionValue,
+} from "motion/react";
 import {
   Activity,
   AlarmClock,
@@ -159,13 +166,21 @@ const APPS: DemoApp[] = APP_DEFS.map(([name, icon], index) => ({
   colors: PALETTE[(index * 7) % PALETTE.length],
 }));
 
-function AppIcon({ app }: { app: DemoApp }) {
+// 图标与打开转场的浮层共用同一套底色与高光，落地时两者逐像素一致。
+const ICON_SHADE =
+  "shadow-[inset_0_1px_0_rgb(255_255_255/0.35),inset_0_-2px_6px_rgb(0_0_0/0.18)]";
+const iconBackground = (app: DemoApp) => ({
+  backgroundImage: `linear-gradient(160deg, ${app.colors[0]}, ${app.colors[1]})`,
+});
+
+function AppIcon({ app, hidden = false }: { app: DemoApp; hidden?: boolean }) {
   const Icon = app.icon;
   return (
     <span
-      className="flex size-full items-center justify-center rounded-full text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.35),inset_0_-2px_6px_rgb(0_0_0/0.18)]"
+      className={`flex size-full items-center justify-center rounded-full text-white ${ICON_SHADE}`}
       style={{
-        backgroundImage: `linear-gradient(160deg, ${app.colors[0]}, ${app.colors[1]})`,
+        ...iconBackground(app),
+        visibility: hidden ? "hidden" : undefined,
       }}
     >
       <Icon className="size-[46%]" strokeWidth={2.2} />
@@ -247,6 +262,105 @@ const COMPACT_CONFIG: WatchConfig = {
 /** 与组件内部一致：edgeWidth 默认为 0.65 × itemSize。 */
 const defaultEdgeWidth = (itemSize: number) => itemSize * 0.65;
 
+const mix = (from: number, to: number, t: number) => from + (to - from) * t;
+
+// 字形在进度 0.25–0.5 之间淡出、应用内容在 0.5–0.85 之间淡入：关闭时浮层还明显大于图标，
+// 字形就已完全显现（落地前一直看得到图标），两者首尾相接，中间不会只剩底色。
+const GLYPH_FADE = [0.25, 0.5] as const;
+const CONTENT_FADE = [0.5, 0.85] as const;
+
+function smoothstep(edge0: number, edge1: number, x: number) {
+  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * 打开应用的浮层：同一个元素从图标长成应用。
+ * - 形状：前段保持圆形（圆角 = 短边的一半），接近铺满时才收成屏幕圆角，读起来是「图标在长大」。
+ * - 内容：图标字形与图标同为浮层宽度的 46%，随浮层放大并在前段淡出；应用内容在后段淡入。
+ *   关闭时倒放：内容先淡出，字形在落地前完全显现，最后一帧与蜂窝中的原图标一致。
+ */
+function LaunchOverlay({
+  launch,
+  progress,
+  radius,
+  reducedMotion,
+  onClose,
+}: {
+  launch: LaunchState;
+  progress: MotionValue<number>;
+  radius: number;
+  reducedMotion: boolean;
+  onClose: () => void;
+}) {
+  const { app, rect, screen } = launch;
+  const Icon = app.icon;
+  const box = (p: number) =>
+    reducedMotion
+      ? { left: 0, top: 0, width: screen.width, height: screen.height }
+      : {
+          left: mix(rect.left, 0, p),
+          top: mix(rect.top, 0, p),
+          width: mix(rect.size, screen.width, p),
+          height: mix(rect.size, screen.height, p),
+        };
+  const left = useTransform(progress, (p) => box(p).left);
+  const top = useTransform(progress, (p) => box(p).top);
+  const width = useTransform(progress, (p) => box(p).width);
+  const height = useTransform(progress, (p) => box(p).height);
+  const borderRadius = useTransform(progress, (p) => {
+    if (reducedMotion) return radius;
+    const { width: w, height: h } = box(p);
+    return mix(Math.min(w, h) / 2, radius, p * p);
+  });
+  // 减少动态效果时不做位移与缩放，只在原地淡入淡出。
+  const opacity = useTransform(progress, (p) => (reducedMotion ? p : 1));
+  const glyphOpacity = useTransform(
+    progress,
+    (p) => 1 - smoothstep(GLYPH_FADE[0], GLYPH_FADE[1], p),
+  );
+  const contentOpacity = useTransform(progress, (p) =>
+    smoothstep(CONTENT_FADE[0], CONTENT_FADE[1], p),
+  );
+  const contentScale = useTransform(progress, (p) =>
+    mix(0.92, 1, smoothstep(CONTENT_FADE[0], CONTENT_FADE[1], p)),
+  );
+
+  return (
+    <motion.button
+      type="button"
+      aria-label={`关闭 ${app.name}`}
+      className={`absolute cursor-pointer overflow-hidden text-white outline-none ${ICON_SHADE}`}
+      style={{
+        ...iconBackground(app),
+        left,
+        top,
+        width,
+        height,
+        borderRadius,
+        opacity,
+      }}
+      onClick={onClose}
+    >
+      <motion.span
+        aria-hidden
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ opacity: glyphOpacity }}
+      >
+        <Icon style={{ width: "46%", height: "auto" }} strokeWidth={2.2} />
+      </motion.span>
+      <motion.span
+        className="absolute inset-0 flex flex-col items-center justify-center gap-3"
+        style={{ opacity: contentOpacity, scale: contentScale }}
+      >
+        <Icon className="size-14" strokeWidth={1.8} />
+        <span className="text-lg font-semibold tracking-tight">{app.name}</span>
+        <span className="text-xs text-white/70">轻点返回</span>
+      </motion.span>
+    </motion.button>
+  );
+}
+
 /** 表盘外壳 + 打开应用的放大转场（演示 onItemSelect 第三个参数的用法） */
 function WatchFrame({
   mode,
@@ -269,16 +383,27 @@ function WatchFrame({
 }) {
   const screenRef = useRef<HTMLDivElement>(null);
   const [launch, setLaunch] = useState<LaunchState | null>(null);
+  // 打开到关闭落地前，蜂窝中的原图标一直隐藏：全程只有浮层这一个元素在变形。
+  const [hiddenId, setHiddenId] = useState<string | null>(null);
   const reducedMotion = useReducedMotion();
   const { width, height, radius } = config;
   const edge = config.edgeWidth ?? defaultEdgeWidth(config.itemSize);
   // 与组件内部一致：渐近线距视口边缘 0.18 · edgeWidth。
   const inset = edge * 0.18;
 
+  // 整个转场由一个进度值驱动：0 = 蜂窝中的图标，1 = 铺满屏幕的应用。
+  // 浮层几何、字形与内容的透明度、蜂窝的放大都从它派生，开合互为镜像，中途可反向。
+  const progress = useMotionValue(0);
+  const runRef = useRef(0);
+  const spring = reducedMotion
+    ? { duration: 0.2, ease: "easeOut" as const }
+    : { type: "spring" as const, duration: 0.5, bounce: 0 };
+
   const open = (app: DemoApp, element: HTMLElement) => {
     const screen = screenRef.current?.getBoundingClientRect();
     const icon = element.getBoundingClientRect();
     if (!screen) return;
+    setHiddenId(app.id);
     setLaunch({
       app,
       rect: {
@@ -288,15 +413,27 @@ function WatchFrame({
       },
       screen: { width: screen.width, height: screen.height },
     });
+    runRef.current++;
+    animate(progress, 1, spring);
+  };
+
+  const close = () => {
+    const run = ++runRef.current;
+    animate(progress, 0, spring).then(() => {
+      if (runRef.current !== run) return;
+      // 落地后浮层与原图标逐像素一致，同一帧换回原图标。
+      setLaunch(null);
+      setHiddenId(null);
+    });
   };
 
   const origin = launch
     ? `${launch.rect.left + launch.rect.size / 2}px ${launch.rect.top + launch.rect.size / 2}px`
     : "50% 50%";
-  const LaunchIcon = launch?.app.icon;
-  const transition = reducedMotion
-    ? { duration: 0.2 }
-    : { type: "spring" as const, duration: 0.5, bounce: 0 };
+  const zoomScale = useTransform(progress, (p) =>
+    reducedMotion ? 1 : 1 + 1.4 * p,
+  );
+  const zoomOpacity = useTransform(progress, (p) => 1 - smoothstep(0, 0.7, p));
 
   return (
     <div
@@ -315,13 +452,11 @@ function WatchFrame({
       >
         <motion.div
           className="size-full"
-          style={{ transformOrigin: origin }}
-          animate={
-            launch
-              ? { scale: reducedMotion ? 1 : 2.4, opacity: 0 }
-              : { scale: 1, opacity: 1 }
-          }
-          transition={transition}
+          style={{
+            transformOrigin: origin,
+            scale: zoomScale,
+            opacity: zoomOpacity,
+          }}
         >
           <HoneycombView
             className="size-full"
@@ -339,13 +474,18 @@ function WatchFrame({
             }
             getItemKey={(app) => app.id}
             getItemLabel={(app) => app.name}
-            renderItem={(app) => <AppIcon app={app} />}
+            renderItem={(app) => (
+              <AppIcon app={app} hidden={app.id === hiddenId} />
+            )}
             onItemSelect={(app, _index, element) => open(app, element)}
             aria-hidden={launch ? true : undefined}
           />
         </motion.div>
         {showGuides && (
-          <div aria-hidden className="pointer-events-none absolute inset-0 z-10">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-10"
+          >
             <div
               className="absolute border border-dashed border-white/45"
               style={{ inset: edge, borderRadius: Math.max(0, radius - edge) }}
@@ -356,59 +496,16 @@ function WatchFrame({
             />
           </div>
         )}
-        <AnimatePresence>
-          {launch && LaunchIcon && (
-            <motion.button
-              key={launch.app.id}
-              type="button"
-              aria-label={`关闭 ${launch.app.name}`}
-              className="absolute flex cursor-pointer flex-col items-center justify-center gap-3 overflow-hidden text-white outline-none"
-              style={{
-                backgroundImage: `linear-gradient(160deg, ${launch.app.colors[0]}, ${launch.app.colors[1]})`,
-              }}
-              initial={{
-                left: launch.rect.left,
-                top: launch.rect.top,
-                width: launch.rect.size,
-                height: launch.rect.size,
-                borderRadius: launch.rect.size / 2,
-                opacity: reducedMotion ? 0 : 1,
-              }}
-              animate={{
-                left: 0,
-                top: 0,
-                width: launch.screen.width,
-                height: launch.screen.height,
-                borderRadius: radius,
-                opacity: 1,
-              }}
-              exit={{
-                left: launch.rect.left,
-                top: launch.rect.top,
-                width: launch.rect.size,
-                height: launch.rect.size,
-                borderRadius: launch.rect.size / 2,
-                opacity: reducedMotion ? 0 : 1,
-              }}
-              transition={transition}
-              onClick={() => setLaunch(null)}
-            >
-              <motion.span
-                className="flex flex-col items-center gap-3"
-                initial={{ opacity: 0, scale: 0.6 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.6 }}
-                transition={{ duration: 0.2 }}
-              >
-                <LaunchIcon className="size-14" strokeWidth={1.8} />
-                <span className="text-lg font-semibold tracking-tight">
-                  {launch.app.name}
-                </span>
-                <span className="text-xs text-white/70">轻点返回</span>
-              </motion.span>
-            </motion.button>
-          )}
-        </AnimatePresence>
+        {launch && (
+          <LaunchOverlay
+            key={launch.app.id}
+            launch={launch}
+            progress={progress}
+            radius={radius}
+            reducedMotion={Boolean(reducedMotion)}
+            onClose={close}
+          />
+        )}
       </div>
     </div>
   );
@@ -523,7 +620,10 @@ function HoneycombPlayground() {
               <RotateCcw className="size-3.5" />
               重置
             </Button>
-            <ViewSourceButton code={code} description="按当前参数生成的用法。" />
+            <ViewSourceButton
+              code={code}
+              description="按当前参数生成的用法。"
+            />
           </div>
         </div>
         <CardDescription>
@@ -678,7 +778,10 @@ export function HoneycombViewDemo() {
               />
             </div>
             <div className="flex items-center justify-between gap-4">
-              <Label htmlFor="honeycomb-snap" className="flex-col items-start gap-1">
+              <Label
+                htmlFor="honeycomb-snap"
+                className="flex-col items-start gap-1"
+              >
                 <span>松手吸附</span>
                 <span className="text-xs font-normal text-muted-foreground">
                   {mode === "vertical"
@@ -694,7 +797,8 @@ export function HoneycombViewDemo() {
             </div>
             <p className="text-sm leading-relaxed text-muted-foreground">
               靠近边缘的图标按「空间被压缩多少就缩小多少」连续缩小并向内收拢。
-              上下滚动模式参照 watchOS 10 网格：首行 3 个，正中的图标最大、向外逐渐变小。
+              上下滚动模式参照 watchOS 10 网格：首行 3
+              个，正中的图标最大、向外逐渐变小。
             </p>
           </div>
         </CardContent>

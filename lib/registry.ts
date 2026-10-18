@@ -194,7 +194,7 @@ export const componentRegistry: ComponentRegistry = {
             name: "onItemSelect",
             type: "(item: T, index: number, element: HTMLElement) => void",
             description:
-              "点击、回车或空格选中时触发，拖动后的松手不会触发；第三个参数是图标元素，便于从图标位置做打开动画。未传时图标不可聚焦。",
+              "点击、回车或空格选中时触发，拖动后的松手不会触发；第三个参数是图标的定位元素（不含按压缩放），它的矩形就是图标静止时在屏幕上的位置，便于从图标位置做打开动画。未传时图标不可聚焦。",
             required: false,
           },
           {
