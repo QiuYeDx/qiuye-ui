@@ -248,6 +248,10 @@ const COMPACT_CONFIG: WatchConfig = {
   gap: 7,
 };
 
+/** 与组件内部一致：edgeWidth 默认 free 为 itemSize，vertical 为 0.65 × itemSize。 */
+const defaultEdgeWidth = (mode: HoneycombViewMode, itemSize: number) =>
+  itemSize * (mode === "vertical" ? 0.65 : 1);
+
 /** 表盘外壳 + 打开应用的放大转场（演示 onItemSelect 第三个参数的用法） */
 function WatchFrame({
   mode,
@@ -276,7 +280,7 @@ function WatchFrame({
   const [launch, setLaunch] = useState<LaunchState | null>(null);
   const reducedMotion = useReducedMotion();
   const { width, height, radius } = config;
-  const edge = config.edgeWidth ?? config.itemSize;
+  const edge = config.edgeWidth ?? defaultEdgeWidth(mode, config.itemSize);
   // 与组件内部一致：渐近线距视口边缘 0.18 · edgeWidth。
   const inset = edge * 0.18;
 
@@ -470,16 +474,23 @@ function ParamSlider({
 }
 
 /** 参数调试：实时调整尺寸、间距、缩放带与视口，叠加显示缩放带边界。 */
+// 两种模式各自一套参数，默认值与上方「Apple Watch 主屏」示例相同。
+const PLAYGROUND_DEFAULTS: Record<HoneycombViewMode, WatchConfig> = {
+  free: DEFAULT_CONFIG,
+  vertical: VERTICAL_CONFIG,
+};
+
 function HoneycombPlayground() {
-  const [config, setConfig] = useState<WatchConfig>(DEFAULT_CONFIG);
+  const [configs, setConfigs] = useState(PLAYGROUND_DEFAULTS);
   const [mode, setMode] = useState<HoneycombViewMode>("free");
   const [layout, setLayout] = useState<HoneycombViewLayout>("spiral");
   const [snap, setSnap] = useState(true);
   const [showGuides, setShowGuides] = useState(true);
-  const edge = config.edgeWidth ?? config.itemSize;
+  const config = configs[mode];
+  const edge = config.edgeWidth ?? defaultEdgeWidth(mode, config.itemSize);
   const curvature = config.curvature ?? (mode === "vertical" ? 0.4 : 0);
   const update = (patch: Partial<WatchConfig>) =>
-    setConfig((prev) => ({ ...prev, ...patch }));
+    setConfigs((prev) => ({ ...prev, [mode]: { ...prev[mode], ...patch } }));
   // 圆角不超过视口较短边的一半。
   const maxRadius = Math.floor(Math.min(config.width, config.height) / 2);
   const radius = Math.min(config.radius, maxRadius);
@@ -512,7 +523,7 @@ function HoneycombPlayground() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                setConfig(DEFAULT_CONFIG);
+                setConfigs(PLAYGROUND_DEFAULTS);
                 setMode("free");
                 setLayout("spiral");
                 setSnap(true);
@@ -562,10 +573,16 @@ function HoneycombPlayground() {
           </div>
           <ParamSlider
             label="缩放带宽度 edgeWidth"
-            value={edge}
+            value={Math.round(edge)}
             min={0}
             max={160}
-            hint={config.edgeWidth === null ? "（默认 = itemSize）" : ""}
+            hint={
+              config.edgeWidth === null
+                ? mode === "vertical"
+                  ? "（默认 = 0.65 × itemSize）"
+                  : "（默认 = itemSize）"
+                : ""
+            }
             onChange={(value) => update({ edgeWidth: value })}
           />
           <ParamSlider
