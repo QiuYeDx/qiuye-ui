@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   animate,
   motion,
@@ -264,10 +264,11 @@ const defaultEdgeWidth = (itemSize: number) => itemSize * 0.65;
 
 const mix = (from: number, to: number, t: number) => from + (to - from) * t;
 
-// 字形在进度 0.25–0.5 之间淡出、应用内容在 0.5–0.85 之间淡入：关闭时浮层还明显大于图标，
-// 字形就已完全显现（落地前一直看得到图标），两者首尾相接，中间不会只剩底色。
-const GLYPH_FADE = [0.25, 0.5] as const;
+// 应用名称等非共享内容在进度 0.5–0.85 之间淡入（关闭时倒放，先于落地淡出）。
 const CONTENT_FADE = [0.5, 0.85] as const;
+// 字形尺寸：图标中为图标直径的 46%（与 AppIcon 一致），应用中为 56px（size-14 占位）。
+const ICON_GLYPH_RATIO = 0.46;
+const APP_GLYPH_SIZE = 56;
 
 function smoothstep(edge0: number, edge1: number, x: number) {
   const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
@@ -277,8 +278,11 @@ function smoothstep(edge0: number, edge1: number, x: number) {
 /**
  * 打开应用的浮层：同一个元素从图标长成应用。
  * - 形状：前段保持圆形（圆角 = 短边的一半），接近铺满时才收成屏幕圆角，读起来是「图标在长大」。
- * - 内容：图标字形与图标同为浮层宽度的 46%，随浮层放大并在前段淡出；应用内容在后段淡入。
- *   关闭时倒放：内容先淡出，字形在落地前完全显现，最后一帧与蜂窝中的原图标一致。
+ * - 共享元素：图标字形在两种状态里都存在，作为同一个元素连续迁移——从图标正中（浮层宽度的 46%）
+ *   移动并缩放到应用内容中的位置，不做淡出淡入。终点由应用内容里的隐形占位测量得到。
+ * - 非共享内容：应用名称与提示只在应用状态存在，后段淡入、关闭时先淡出。
+ * 不用 layoutId：它以 transform: scale 投影，SVG 描边会随之缩放，也会与浮层逐帧变化的几何互相干扰；
+ * 这里字形的位置与尺寸和浮层一样由同一个进度值派生。
  */
 function LaunchOverlay({
   launch,
@@ -295,6 +299,19 @@ function LaunchOverlay({
 }) {
   const { app, rect, screen } = launch;
   const Icon = app.icon;
+  const slotRef = useRef<HTMLSpanElement>(null);
+  // 应用状态下字形中心相对浮层中心的偏移。内容在浮层中水平、垂直居中，偏移与浮层尺寸无关，挂载时测一次即可。
+  const slotOffset = useRef({ x: 0, y: 0 });
+  useLayoutEffect(() => {
+    const slot = slotRef.current;
+    const content = slot?.offsetParent as HTMLElement | null;
+    if (!slot || !content) return;
+    slotOffset.current = {
+      x: slot.offsetLeft + slot.offsetWidth / 2 - content.clientWidth / 2,
+      y: slot.offsetTop + slot.offsetHeight / 2 - content.clientHeight / 2,
+    };
+  }, [progress]);
+
   const box = (p: number) =>
     reducedMotion
       ? { left: 0, top: 0, width: screen.width, height: screen.height }
@@ -315,15 +332,28 @@ function LaunchOverlay({
   });
   // 减少动态效果时不做位移与缩放，只在原地淡入淡出。
   const opacity = useTransform(progress, (p) => (reducedMotion ? p : 1));
-  const glyphOpacity = useTransform(
-    progress,
-    (p) => 1 - smoothstep(GLYPH_FADE[0], GLYPH_FADE[1], p),
-  );
+
+  // 共享字形：起点与蜂窝中的图标字形重合（浮层宽度的 46%、居中），终点是应用内容中的占位。
+  const glyph = (p: number) => {
+    const t = reducedMotion ? 1 : p;
+    const { width: w, height: h } = box(p);
+    const size = mix(rect.size * ICON_GLYPH_RATIO, APP_GLYPH_SIZE, t);
+    return {
+      size,
+      left: w / 2 + slotOffset.current.x * t - size / 2,
+      top: h / 2 + slotOffset.current.y * t - size / 2,
+    };
+  };
+  const glyphLeft = useTransform(progress, (p) => glyph(p).left);
+  const glyphTop = useTransform(progress, (p) => glyph(p).top);
+  const glyphSize = useTransform(progress, (p) => glyph(p).size);
+
+  // 非共享内容：应用名称与提示。
   const contentOpacity = useTransform(progress, (p) =>
     smoothstep(CONTENT_FADE[0], CONTENT_FADE[1], p),
   );
-  const contentScale = useTransform(progress, (p) =>
-    mix(0.92, 1, smoothstep(CONTENT_FADE[0], CONTENT_FADE[1], p)),
+  const contentY = useTransform(progress, (p) =>
+    mix(6, 0, smoothstep(CONTENT_FADE[0], CONTENT_FADE[1], p)),
   );
 
   return (
@@ -344,19 +374,42 @@ function LaunchOverlay({
     >
       <motion.span
         aria-hidden
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ opacity: glyphOpacity }}
+        className="absolute flex"
+        style={{
+          left: glyphLeft,
+          top: glyphTop,
+          width: glyphSize,
+          height: glyphSize,
+        }}
       >
-        <Icon style={{ width: "46%", height: "auto" }} strokeWidth={2.2} />
+        <Icon className="size-full" strokeWidth={2.2} />
       </motion.span>
-      <motion.span
-        className="absolute inset-0 flex flex-col items-center justify-center gap-3"
-        style={{ opacity: contentOpacity, scale: contentScale }}
+      {/* 应用内容的静态布局：始终按铺满后的屏幕尺寸排版并居中于浮层（超出部分被浮层裁切），
+          飞行中文字不随浮层宽度换行，测得的占位位置也与最终一致。字形位置只放隐形占位。 */}
+      <span
+        className="absolute top-1/2 left-1/2 flex flex-col items-center justify-center gap-3"
+        style={{
+          width: screen.width,
+          height: screen.height,
+          marginLeft: -screen.width / 2,
+          marginTop: -screen.height / 2,
+        }}
       >
-        <Icon className="size-14" strokeWidth={1.8} />
-        <span className="text-lg font-semibold tracking-tight">{app.name}</span>
-        <span className="text-xs text-white/70">轻点返回</span>
-      </motion.span>
+        <span
+          ref={slotRef}
+          aria-hidden
+          className="invisible size-14 shrink-0"
+        />
+        <motion.span
+          className="flex flex-col items-center gap-3"
+          style={{ opacity: contentOpacity, y: contentY }}
+        >
+          <span className="text-lg font-semibold tracking-tight">
+            {app.name}
+          </span>
+          <span className="text-xs text-white/70">轻点返回</span>
+        </motion.span>
+      </span>
     </motion.button>
   );
 }
