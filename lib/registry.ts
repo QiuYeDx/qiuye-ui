@@ -263,7 +263,7 @@ export const componentRegistry: ComponentRegistry = {
             name: "snap",
             type: "boolean",
             description:
-              "松手后吸附：free 让最近的图标停在正中，vertical 让某一行停在顶端。",
+              "松手或滚轮停下后吸附：free 让最近的图标停在正中，vertical 让某一行停在顶端（各行关于视口中心对称）。",
             required: false,
             default: "true",
           },

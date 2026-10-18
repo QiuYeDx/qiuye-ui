@@ -84,7 +84,7 @@ export interface HoneycombViewProps<T>
    */
   curvature?: number;
   /**
-   * 松手后吸附：free 模式让最近的图标停在正中，vertical 模式让某一行停在顶端
+   * 松手或滚轮停下后吸附：free 模式让最近的图标停在正中，vertical 模式让某一行停在顶端
    * @default true
    */
   snap?: boolean;
@@ -143,6 +143,8 @@ const BOUNCE_DAMPING = 28;
 const SNAP_SPRING = { type: "spring" as const, duration: 0.6, bounce: 0.12 };
 const SETTLE_SPRING = { type: "spring" as const, duration: 0.45, bounce: 0 };
 const WHEEL_SPRING = { type: "spring" as const, duration: 0.32, bounce: 0 };
+// 滚轮停下多久后吸附（ms）：触控板的惯性滚动也会持续发出 wheel 事件，等它结束再吸附。
+const WHEEL_SNAP_DELAY = 150;
 const INTRO_DURATION = 0.8;
 const INTRO_SPREAD = 0.4;
 // 小圆点渐近线距视口边缘的距离，占缩放带宽度的比例。
@@ -444,6 +446,7 @@ function HoneycombViewInner<T>(
   const dragRef = React.useRef<DragState | null>(null);
   const suppressClickRef = React.useRef(false);
   const wheelRef = React.useRef({ x: 0, y: 0, time: 0 });
+  const wheelSnapTimer = React.useRef<number | undefined>(undefined);
   const resetKeyRef = React.useRef<string | null>(null);
   const vertical = mode === "vertical";
   const count = items.length;
@@ -596,7 +599,14 @@ function HoneycombViewInner<T>(
       }
       return stop;
     };
-    const stopY = findStop("y", halfY - itemSize * FILL_INSET_Y);
+    let stopY = findStop("y", halfY - itemSize * FILL_INSET_Y);
+    if (vertical) {
+      // 吸附让某一行停在 -stopY；stopY 取半行距的整数倍，
+      // 每个吸附位置的行都关于视口中心对称（正中一行，或两行跨在中心两侧），
+      // 否则只有顶端贴合、底端留白，整体看起来偏上。
+      const half = (spacing * SQRT3_2) / 2;
+      stopY = Math.max(half, Math.round(stopY / half) * half);
+    }
     g.topY = stopY;
     g.boundsY = axisBounds(minY, maxY, stopY);
     g.revealY = Math.min(g.revealY, stopY);
@@ -735,9 +745,47 @@ function HoneycombViewInner<T>(
   }, [geometry, mode, layout, columns, offsetX, offsetY, intro, paint, reducedMotion]);
 
   const stopMotion = React.useCallback(() => {
+    window.clearTimeout(wheelSnapTimer.current);
     offsetX.stop();
     offsetY.stop();
   }, [offsetX, offsetY]);
+
+  /** 离投影落点最近的吸附位置：free 模式让某个图标停在正中，vertical 模式让某一行停在顶端。 */
+  const snapTarget = React.useCallback(
+    (projectedX: number, projectedY: number, g: Geometry) => {
+      let targetX = projectedX;
+      let targetY = projectedY;
+      let best = Infinity;
+      if (g.vertical) {
+        const rowY = new Map<number, number>();
+        g.points.forEach((point, index) => rowY.set(g.rows[index], point.y));
+        rowY.forEach((y) => {
+          const candidate = clamp(-g.topY - y, g.boundsY.min, g.boundsY.max);
+          const distance = Math.abs(candidate - projectedY);
+          if (distance < best) {
+            best = distance;
+            targetY = candidate;
+          }
+        });
+      } else {
+        for (const point of g.points) {
+          const candidateX = clamp(-point.x, g.boundsX.min, g.boundsX.max);
+          const candidateY = clamp(-point.y, g.boundsY.min, g.boundsY.max);
+          const distance = Math.hypot(
+            candidateX - projectedX,
+            candidateY - projectedY,
+          );
+          if (distance < best) {
+            best = distance;
+            targetX = candidateX;
+            targetY = candidateY;
+          }
+        }
+      }
+      return { x: targetX, y: targetY };
+    },
+    [],
+  );
 
   /** 松手：吸附时投影落点后用弹簧带着速度过去，否则按 UIScrollView 的减速率惯性滑行。 */
   const release = React.useCallback(
@@ -773,36 +821,7 @@ function HoneycombViewInner<T>(
               g.boundsX.min,
               g.boundsX.max,
             );
-        let targetX = projectedX;
-        let targetY = projectedY;
-        let best = Infinity;
-        if (g.vertical) {
-          // 某一行停在满尺寸区域顶端。
-          const rowY = new Map<number, number>();
-          g.points.forEach((point, index) => rowY.set(g.rows[index], point.y));
-          rowY.forEach((y) => {
-            const candidate = clamp(-g.topY - y, g.boundsY.min, g.boundsY.max);
-            const distance = Math.abs(candidate - projectedY);
-            if (distance < best) {
-              best = distance;
-              targetY = candidate;
-            }
-          });
-        } else {
-          for (const point of g.points) {
-            const candidateX = clamp(-point.x, g.boundsX.min, g.boundsX.max);
-            const candidateY = clamp(-point.y, g.boundsY.min, g.boundsY.max);
-            const distance = Math.hypot(
-              candidateX - projectedX,
-              candidateY - projectedY,
-            );
-            if (distance < best) {
-              best = distance;
-              targetX = candidateX;
-              targetY = candidateY;
-            }
-          }
-        }
+        const { x: targetX, y: targetY } = snapTarget(projectedX, projectedY, g);
         const spring = reducedMotion ? { ...SNAP_SPRING, bounce: 0 } : SNAP_SPRING;
         animate(offsetY, targetY, { ...spring, velocity: settled[0] });
         if (!g.vertical) {
@@ -827,7 +846,7 @@ function HoneycombViewInner<T>(
         });
       });
     },
-    [offsetX, offsetY, snap, reducedMotion],
+    [offsetX, offsetY, snap, reducedMotion, snapTarget],
   );
 
   const setPressed = (element: HTMLElement | null, pressed: boolean) => {
@@ -911,6 +930,7 @@ function HoneycombViewInner<T>(
   };
 
   // 滚轮 / 触控板：非 passive 监听，累加目标后用短弹簧跟随；到边界后交还给页面。
+  // 开启吸附时，滚动停下后与松手一样滑到最近的吸附位置。
   React.useEffect(() => {
     const node = rootRef.current;
     if (!node) return;
@@ -942,6 +962,18 @@ function HoneycombViewInner<T>(
       if (nextY !== wheel.y) animate(offsetY, nextY, WHEEL_SPRING);
       wheel.x = nextX;
       wheel.y = nextY;
+      if (!snap || !g.points.length) return;
+      window.clearTimeout(wheelSnapTimer.current);
+      wheelSnapTimer.current = window.setTimeout(() => {
+        const current = geometryRef.current;
+        if (!current || dragRef.current) return;
+        const target = snapTarget(wheel.x, wheel.y, current);
+        const spring = reducedMotion ? { duration: 0 } : SETTLE_SPRING;
+        if (target.x !== wheel.x) animate(offsetX, target.x, spring);
+        if (target.y !== wheel.y) animate(offsetY, target.y, spring);
+        wheel.x = target.x;
+        wheel.y = target.y;
+      }, WHEEL_SNAP_DELAY);
     };
     // iOS 上仅靠 touch-action 有时仍会接管手势；按下后阻止 touchmove 的默认行为。
     const onTouchMove = (event: TouchEvent) => {
@@ -952,8 +984,9 @@ function HoneycombViewInner<T>(
     return () => {
       node.removeEventListener("wheel", onWheel);
       node.removeEventListener("touchmove", onTouchMove);
+      window.clearTimeout(wheelSnapTimer.current);
     };
-  }, [offsetX, offsetY]);
+  }, [offsetX, offsetY, snap, snapTarget, reducedMotion]);
 
   /** 键盘聚焦时把图标平移进满尺寸区域。 */
   const revealItem = React.useCallback(
