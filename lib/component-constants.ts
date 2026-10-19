@@ -24,6 +24,7 @@ export enum ComponentId {
   MATRIX_EFFECT = "matrix-effect",
   EXPANDABLE_CARD = "expandable-card",
   HONEYCOMB_VIEW = "honeycomb-view",
+  ADAPTIVE_POINTER = "adaptive-pointer",
 }
 
 // 组件 ID 数组，方便遍历
@@ -39,6 +40,30 @@ export type BasicUsageExamples = Record<ComponentId, BasicUsageExample>;
 
 // 基础使用示例数据
 export const basicUsageExamples: BasicUsageExamples = {
+  [ComponentId.ADAPTIVE_POINTER]: {
+    import: `import {
+  AdaptivePointer,
+  AdaptivePointerArea,
+  pointerTarget,
+} from "@/components/qiuye-ui/adaptive-pointer";
+import { Button } from "@/components/ui/button";
+import { BoldIcon } from "lucide-react";`,
+    usage: `// 整页：放在根布局里一次。默认单层指针、内容视差、正文 I 形竖条、静止 2 秒后隐藏
+<AdaptivePointer />
+
+// 局部：只在子树内生效（含它打开的菜单、对话框）；ring 开启外环定位
+<AdaptivePointerArea ring className="rounded-xl border p-6">
+  <Button variant="ghost" size="icon" aria-label="加粗">
+    <BoldIcon />
+  </Button>
+  {/* 高度超过 96px 的卡片自动按 hover 处理：跟手的柔和圆，不变形 */}
+  <a href="/posts/1" className="block h-32 rounded-xl border p-4">
+    大卡片
+  </a>
+  {/* 显式指定效果（在客户端组件里调用） */}
+  <Button {...pointerTarget({ effect: "lift" })}>发布</Button>
+</AdaptivePointerArea>`,
+  },
   [ComponentId.HONEYCOMB_VIEW]: {
     import: `import { HoneycombView } from "@/components/qiuye-ui/honeycomb-view";`,
     usage: `<HoneycombView

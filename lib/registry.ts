@@ -147,6 +147,360 @@ const matrixEffectRuntimeProps: PropDefinition[] = [
 
 // 组件注册表
 export const componentRegistry: ComponentRegistry = {
+  [ComponentId.ADAPTIVE_POINTER]: {
+    name: "AdaptivePointer",
+    description:
+      "参照 iPadOS 妙控板圆形指针的自适应指针：淡灰填充层悬停时变形为目标下方的圆角板并带阻尼偏移，图标随之轻微移动，正文上变为 I 形竖条，静止 2 秒后淡出；可选的深灰外环缩成小圆 1:1 标出真实指针位置。支持整页与局部作用域（含浮层）与主题令牌，触屏与减少动态效果时使用系统指针。",
+    category: "视觉与动效",
+    dependencies: ["motion", "radix-ui"],
+    files: {
+      component: "components/qiuye-ui/adaptive-pointer.tsx",
+      demo: "components/qiuye-ui/demos/adaptive-pointer-demo.tsx",
+    },
+    propsInfo: [
+      {
+        componentName: "AdaptivePointer（整页）",
+        props: [
+          {
+            name: "disabled",
+            type: "boolean",
+            description:
+              "关闭本作用域，交还原生指针；适合接用户的「使用系统指针」偏好。Area 关闭时在整页实例里也会成为原生区域。",
+            required: false,
+            default: "false",
+          },
+          {
+            name: "size",
+            type: "number",
+            description:
+              "静止时两层的直径（px），夹在 12–40 并取偶数。",
+            required: false,
+            default: "20",
+          },
+          {
+            name: "ring",
+            type: "boolean",
+            description:
+              "外环定位：开启后外环与填充层分离，悬停在可点击目标上时缩成小圆，1:1 标出真实热点。关闭即 Apple 经典单层（静止填充更深一些）。",
+            required: false,
+            default: "false",
+          },
+          {
+            name: "ringSize",
+            type: "number",
+            description:
+              "悬停在可点击目标上时外环缩成的直径（px），夹在 4 到 size − 4。",
+            required: false,
+            default: "8",
+          },
+          {
+            name: "ringWidth",
+            type: "number",
+            description:
+              "外环描边（CSS px），夹在 1–3；按设备像素取整，增强对比度偏好下至少为 2。",
+            required: false,
+            default: "1.5",
+          },
+          {
+            name: "parallax",
+            type: "number",
+            description:
+              "阻尼偏移强度倍数（0–2）。0 同时关闭偏移、拉伸与内容视差。",
+            required: false,
+            default: "1",
+          },
+          {
+            name: "contentParallax",
+            type: "boolean",
+            description:
+              "内容视差：吸附到只有图标的目标（图标按钮）时，图标跟着圆角板轻微移动。写了 data-pointer-content 的子元素始终参与；目标上写 data-pointer-content=\"off\" 单独关闭。",
+            required: false,
+            default: "true",
+          },
+          {
+            name: "textBeam",
+            type: "boolean",
+            description:
+              "正文 I 形竖条：指针落在正文字符上（且不在可点击目标上）时变为吸附到行的竖条。关闭后只在 data-pointer=\"text\" 区域内显示；data-pointer=\"none\" 的子树不显示。",
+            required: false,
+            default: "true",
+          },
+          {
+            name: "largeTarget",
+            type: "{ height?: number; area?: number }",
+            description:
+              "大目标阈值：auto 目标的高度或面积超过阈值时按 hover 处理（跟手的柔和圆，不变形）。",
+            required: false,
+            default: "{ height: 96, area: 32000 }",
+          },
+          {
+            name: "selector",
+            type: "string",
+            description:
+              "自动识别可点击目标的选择器，整体替换默认值；扩展写法为 `${DEFAULT_ADAPTIVE_POINTER_SELECTOR}, .clickable`。不支持的段会被丢弃。",
+            required: false,
+            default: "DEFAULT_ADAPTIVE_POINTER_SELECTOR",
+          },
+          {
+            name: "hideOnKeyboard",
+            type: "boolean",
+            description:
+              "按下非修饰键时淡出，移动指针后恢复。",
+            required: false,
+            default: "true",
+          },
+          {
+            name: "autoHide",
+            type: "number | false",
+            description:
+              "静止多少毫秒后淡出（最小 500），false 为常驻。",
+            required: false,
+            default: "2000",
+          },
+          {
+            name: "timeScale",
+            type: "number",
+            description:
+              "物理时间倍率（0.1–2），0.25 即四倍慢放，便于调试。",
+            required: false,
+            default: "1",
+          },
+          {
+            name: "onStateChange",
+            type: "(info: AdaptivePointerStateInfo) => void",
+            description:
+              "形态、目标或按压状态变化时触发（经 queueMicrotask 调用）；离开本作用域时收到 { state: \"hidden\", target: null }。",
+            required: false,
+          },
+        ],
+      },
+      {
+        componentName: "AdaptivePointerArea（局部）",
+        props: [
+          {
+            name: "disabled",
+            type: "boolean",
+            description:
+              "关闭本作用域，交还原生指针；适合接用户的「使用系统指针」偏好。Area 关闭时在整页实例里也会成为原生区域。",
+            required: false,
+            default: "false",
+          },
+          {
+            name: "size",
+            type: "number",
+            description:
+              "静止时两层的直径（px），夹在 12–40 并取偶数。",
+            required: false,
+            default: "20",
+          },
+          {
+            name: "ring",
+            type: "boolean",
+            description:
+              "外环定位：开启后外环与填充层分离，悬停在可点击目标上时缩成小圆，1:1 标出真实热点。关闭即 Apple 经典单层（静止填充更深一些）。",
+            required: false,
+            default: "false",
+          },
+          {
+            name: "ringSize",
+            type: "number",
+            description:
+              "悬停在可点击目标上时外环缩成的直径（px），夹在 4 到 size − 4。",
+            required: false,
+            default: "8",
+          },
+          {
+            name: "ringWidth",
+            type: "number",
+            description:
+              "外环描边（CSS px），夹在 1–3；按设备像素取整，增强对比度偏好下至少为 2。",
+            required: false,
+            default: "1.5",
+          },
+          {
+            name: "parallax",
+            type: "number",
+            description:
+              "阻尼偏移强度倍数（0–2）。0 同时关闭偏移、拉伸与内容视差。",
+            required: false,
+            default: "1",
+          },
+          {
+            name: "contentParallax",
+            type: "boolean",
+            description:
+              "内容视差：吸附到只有图标的目标（图标按钮）时，图标跟着圆角板轻微移动。写了 data-pointer-content 的子元素始终参与；目标上写 data-pointer-content=\"off\" 单独关闭。",
+            required: false,
+            default: "true",
+          },
+          {
+            name: "textBeam",
+            type: "boolean",
+            description:
+              "正文 I 形竖条：指针落在正文字符上（且不在可点击目标上）时变为吸附到行的竖条。关闭后只在 data-pointer=\"text\" 区域内显示；data-pointer=\"none\" 的子树不显示。",
+            required: false,
+            default: "true",
+          },
+          {
+            name: "largeTarget",
+            type: "{ height?: number; area?: number }",
+            description:
+              "大目标阈值：auto 目标的高度或面积超过阈值时按 hover 处理（跟手的柔和圆，不变形）。",
+            required: false,
+            default: "{ height: 96, area: 32000 }",
+          },
+          {
+            name: "selector",
+            type: "string",
+            description:
+              "自动识别可点击目标的选择器，整体替换默认值；扩展写法为 `${DEFAULT_ADAPTIVE_POINTER_SELECTOR}, .clickable`。不支持的段会被丢弃。",
+            required: false,
+            default: "DEFAULT_ADAPTIVE_POINTER_SELECTOR",
+          },
+          {
+            name: "hideOnKeyboard",
+            type: "boolean",
+            description:
+              "按下非修饰键时淡出，移动指针后恢复。",
+            required: false,
+            default: "true",
+          },
+          {
+            name: "autoHide",
+            type: "number | false",
+            description:
+              "静止多少毫秒后淡出（最小 500），false 为常驻。",
+            required: false,
+            default: "2000",
+          },
+          {
+            name: "timeScale",
+            type: "number",
+            description:
+              "物理时间倍率（0.1–2），0.25 即四倍慢放，便于调试。",
+            required: false,
+            default: "1",
+          },
+          {
+            name: "onStateChange",
+            type: "(info: AdaptivePointerStateInfo) => void",
+            description:
+              "形态、目标或按压状态变化时触发（经 queueMicrotask 调用）；离开本作用域时收到 { state: \"hidden\", target: null }。",
+            required: false,
+          },
+          {
+            name: "asChild",
+            type: "boolean",
+            description:
+              "用 Radix Slot 把作用域挂到唯一的子元素上，不增加 DOM 层级。",
+            required: false,
+            default: "false",
+          },
+          {
+            name: "className / style / ...",
+            type: "HTMLAttributes<HTMLDivElement>",
+            description:
+              "透传到作用域根节点，ref 转发。",
+            required: false,
+          },
+        ],
+      },
+      {
+        componentName: "pointerTarget() 选项（仅客户端组件；服务端组件直接写 data 属性）",
+        props: [
+          {
+            name: "effect",
+            type: "\"auto\" | \"highlight\" | \"lift\" | \"hover\" | \"text\" | \"none\" | \"native\"",
+            description:
+              "目标效果：auto 按尺寸判定；highlight 变形为圆角板；lift 填充层淡出、由使用方写上浮样式；hover 柔和圆；none 不是目标；native 交还原生指针。",
+            required: false,
+            default: "\"auto\"",
+          },
+          {
+            name: "padding",
+            type: "number | [x: number, y: number]",
+            description:
+              "圆角板外扩（px），默认按目标尺寸取 2–5px（行内元素 4×2）。",
+            required: false,
+          },
+          {
+            name: "radius",
+            type: "number | \"full\"",
+            description:
+              "圆角板圆角（px）或胶囊，默认与目标圆角同心。",
+            required: false,
+          },
+          {
+            name: "parallax",
+            type: "number",
+            description:
+              "该目标的偏移强度倍数，0 关闭偏移与拉伸。",
+            required: false,
+            default: "1",
+          },
+        ],
+      },
+      {
+        componentName: "目标 data 属性",
+        props: [
+          {
+            name: "data-pointer",
+            type: "\"auto\" | \"highlight\" | \"lift\" | \"hover\" | \"none\" | \"native\" | \"text\"",
+            description:
+              "写在目标上指定效果（即使不匹配选择器也会成为目标）；none 停止向上查找；native 整个子树交还原生指针；text 写在容器上，区域内正文显示 I 形竖条。",
+            required: false,
+          },
+          {
+            name: "data-pointer-default",
+            type: "\"highlight\" | \"lift\" | \"hover\" | \"none\"",
+            description:
+              "写在容器上，作为容器内 auto 目标的默认效果，例如菜单内容写 hover 以免和菜单自带的高亮叠在一起。",
+            required: false,
+          },
+          {
+            name: "data-pointer-padding / -radius / -parallax",
+            type: "string",
+            description:
+              "覆盖单个目标的外扩（\"4\" 或 \"6 3\"）、圆角（px 或 full）与偏移强度；也可用 pointerTarget() 生成。",
+            required: false,
+          },
+          {
+            name: "data-pointer-group",
+            type: "\"\" | \"off\"",
+            description:
+              "声明连续组：组容器内的缝隙里，圆角板留在上一个目标上。toolbar、tablist、menu 等角色自动成组，写 off 关闭。",
+            required: false,
+          },
+          {
+            name: "data-pointer-content",
+            type: "强度 0–1（默认 0.4）",
+            description:
+              "写在目标内部的非按钮子元素（图标、文字）上，吸附期间按强度 × 偏移平移；也可用 pointerContent() 生成。",
+            required: false,
+          },
+          {
+            name: "data-pointer-state（只读）",
+            type: "\"highlight\" | \"lift\" | \"hover\"",
+            description:
+              "引擎写在当前吸附的目标上，供使用方写自定义反馈，例如 data-[pointer-state=highlight]:hover:bg-transparent 去掉重复的 hover 背景（shadcn 的 ghost 按钮在深色主题下还要加 dark:data-[pointer-state=highlight]:hover:bg-transparent）。",
+            required: false,
+          },
+          {
+            name: "data-pointer-pressed（只读）",
+            type: "\"\"",
+            description:
+              "引擎写在按下期间的目标上。",
+            required: false,
+          },
+        ],
+      },
+    ],
+    version: "1.0.0",
+    author: "QiuYeDx",
+    tags: ["iPadOS", "指针", "光标", "cursor", "悬停", "视差", "弹簧", "变形"],
+    cliName: "adaptive-pointer",
+    basicUsage: basicUsageExamples[ComponentId.ADAPTIVE_POINTER],
+  },
   [ComponentId.HONEYCOMB_VIEW]: {
     name: "HoneycombView",
     description:

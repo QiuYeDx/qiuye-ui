@@ -37,6 +37,7 @@ export async function generateStaticParams() {
 import { AnimatedNumberDemo } from "@/components/qiuye-ui/demos/animated-number-demo";
 import { ExpandableCardDemo } from "@/components/qiuye-ui/demos/expandable-card-demo";
 import { HoneycombViewDemo } from "@/components/qiuye-ui/demos/honeycomb-view-demo";
+import { AdaptivePointerDemo } from "@/components/qiuye-ui/demos/adaptive-pointer-demo";
 
 // 导入演示组件
 import { ResponsiveTabsDemo } from "@/components/qiuye-ui/demos/responsive-tabs-demo";
@@ -57,6 +58,7 @@ import { MatrixEffectDemo } from "@/components/qiuye-ui/demos/matrix-effect-demo
 
 // TODO: 新增 qiuye-ui 自定义组件时需要完善 demo 文件
 const demoComponents = {
+  [ComponentId.ADAPTIVE_POINTER]: AdaptivePointerDemo,
   [ComponentId.HONEYCOMB_VIEW]: HoneycombViewDemo,
   [ComponentId.EXPANDABLE_CARD]: ExpandableCardDemo,
   [ComponentId.ANIMATED_NUMBER]: AnimatedNumberDemo,
@@ -82,6 +84,7 @@ import {
   AnimatedNumberSimpleDemo,
   ExpandableCardSimpleDemo,
   HoneycombViewSimpleDemo,
+  AdaptivePointerSimpleDemo,
   ResponsiveTabsSimpleDemo,
   ClipPathTabsSimpleDemo,
   SegmentedControlSimpleDemo,
@@ -101,6 +104,7 @@ import {
 
 // 精简的单例演示组件
 const simpleDemoComponents = {
+  [ComponentId.ADAPTIVE_POINTER]: AdaptivePointerSimpleDemo,
   [ComponentId.HONEYCOMB_VIEW]: HoneycombViewSimpleDemo,
   [ComponentId.EXPANDABLE_CARD]: ExpandableCardSimpleDemo,
   [ComponentId.ANIMATED_NUMBER]: AnimatedNumberSimpleDemo,

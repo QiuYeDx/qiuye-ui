@@ -30,6 +30,7 @@
 - `matrix-effect`
 - `expandable-card`
 - `honeycomb-view`
+- `adaptive-pointer`
 
 ## 核心目录
 

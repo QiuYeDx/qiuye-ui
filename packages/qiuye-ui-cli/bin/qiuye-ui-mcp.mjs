@@ -29,6 +29,7 @@ const DEFAULT_COMPONENT_NAMES = [
   "matrix-effect",
   "expandable-card",
   "honeycomb-view",
+  "adaptive-pointer",
 ];
 
 function parseArgs(argv) {

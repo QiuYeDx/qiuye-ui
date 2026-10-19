@@ -17,6 +17,7 @@ export const homePreviewConfigs: HomePreviewConfig[] = [
     featured: true,
   },
   { id: ComponentId.HONEYCOMB_VIEW, size: "tall", featured: true },
+  { id: ComponentId.ADAPTIVE_POINTER, size: "wide", featured: true },
   {
     id: ComponentId.DOT_GLASS,
     size: "wide",

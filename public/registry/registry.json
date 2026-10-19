@@ -4,6 +4,25 @@
   "homepage": "https://ui.qiuyedx.com",
   "items": [
     {
+      "name": "adaptive-pointer",
+      "type": "registry:component",
+      "title": "AdaptivePointer",
+      "author": "QiuYeDx <me@qiuyedx.com>",
+      "dependencies": [
+        "motion",
+        "radix-ui"
+      ],
+      "registryDependencies": [],
+      "files": [
+        {
+          "path": "components/qiuye-ui/adaptive-pointer.tsx",
+          "type": "registry:component",
+          "target": "components/qiuye-ui/adaptive-pointer.tsx"
+        }
+      ],
+      "description": "参照 iPadOS 妙控板圆形指针的自适应指针：淡灰填充层悬停时变形为目标下方的圆角板并带阻尼偏移，图标随之轻微移动，正文上变为 I 形竖条，静止 2 秒后淡出；可选的深灰外环缩成小圆 1:1 标出真实指针位置。支持整页与局部作用域（含浮层）与主题令牌，触屏与减少动态效果时使用系统指针。"
+    },
+    {
       "name": "animated-number",
       "type": "registry:component",
       "title": "AnimatedNumber",
