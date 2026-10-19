@@ -48,6 +48,9 @@ function Slider({
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
+          // role="slider" 在 Thumb 上：把根节点的无障碍名称转给它，否则读屏只读出「滑块」
+          aria-label={props["aria-label"]}
+          aria-labelledby={props["aria-labelledby"]}
           className="relative block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
         />
       ))}
