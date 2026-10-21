@@ -25,6 +25,7 @@ export enum ComponentId {
   EXPANDABLE_CARD = "expandable-card",
   HONEYCOMB_VIEW = "honeycomb-view",
   ADAPTIVE_POINTER = "adaptive-pointer",
+  SPOTLIGHT_TILE = "spotlight-tile",
 }
 
 // 组件 ID 数组，方便遍历
@@ -40,6 +41,29 @@ export type BasicUsageExamples = Record<ComponentId, BasicUsageExample>;
 
 // 基础使用示例数据
 export const basicUsageExamples: BasicUsageExamples = {
+  [ComponentId.SPOTLIGHT_TILE]: {
+    import: `import { SpotlightTile } from "@/components/qiuye-ui/spotlight-tile";
+import { Button } from "@/components/ui/button";
+import { LanguagesIcon } from "lucide-react";`,
+    usage: `<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  <SpotlightTile
+    index={0} // 网格中的序号，错开上浮淡入
+    tone="oklch(0.62 0.19 255)" // 任意 CSS 颜色
+    icon={<LanguagesIcon />}
+    badge="Beta"
+    title="字幕翻译"
+    description="批量翻译 SRT / ASS 字幕，保留时间轴与样式。"
+    chips={["SRT", "ASS", "双语"]}
+    href="/tools/translate" // 标题链接的点击区域铺满整张卡片
+    actions={
+      // 浮在卡片链接之上，可以单独点击
+      <Button size="sm" variant="outline" className="h-7 rounded-full px-3 text-xs">
+        快速开始
+      </Button>
+    }
+  />
+</div>`,
+  },
   [ComponentId.ADAPTIVE_POINTER]: {
     import: `import {
   AdaptivePointer,

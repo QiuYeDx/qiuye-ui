@@ -502,6 +502,28 @@
       "description": "Figma/iOS 风格平滑圆角组件，基于 CSS corner-shape 渐进增强并回退到标准 border-radius。"
     },
     {
+      "name": "spotlight-tile",
+      "type": "registry:component",
+      "title": "SpotlightTile",
+      "author": "QiuYeDx <me@qiuyedx.com>",
+      "dependencies": [
+        "motion",
+        "radix-ui",
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "@qiuye-ui/smooth-corners"
+      ],
+      "files": [
+        {
+          "path": "components/qiuye-ui/spotlight-tile.tsx",
+          "type": "registry:component",
+          "target": "components/qiuye-ui/spotlight-tile.tsx"
+        }
+      ],
+      "description": "跟随指针取光的聚光卡片：边框沿指针亮起色调光，角落水印图标与图标底板随悬停漂移，标题链接铺满整张卡片而内层按钮仍可点击。"
+    },
+    {
       "name": "theme-transition-toggle",
       "type": "registry:component",
       "title": "ThemeTransitionToggle",

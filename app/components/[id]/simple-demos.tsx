@@ -614,3 +614,4 @@ export { AnimatedNumberPreview as AnimatedNumberSimpleDemo } from "@/components/
 export { ExpandableCardPreview as ExpandableCardSimpleDemo } from "@/components/qiuye-ui/demos/expandable-card-demo";
 export { HoneycombViewPreview as HoneycombViewSimpleDemo } from "@/components/qiuye-ui/demos/honeycomb-view-demo";
 export { AdaptivePointerPreview as AdaptivePointerSimpleDemo } from "@/components/qiuye-ui/demos/adaptive-pointer-demo";
+export { SpotlightTilePreview as SpotlightTileSimpleDemo } from "@/components/qiuye-ui/demos/spotlight-tile-demo";

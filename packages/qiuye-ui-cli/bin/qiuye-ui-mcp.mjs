@@ -30,6 +30,7 @@ const DEFAULT_COMPONENT_NAMES = [
   "expandable-card",
   "honeycomb-view",
   "adaptive-pointer",
+  "spotlight-tile",
 ];
 
 function parseArgs(argv) {

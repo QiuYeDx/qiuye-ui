@@ -38,6 +38,7 @@ import { AnimatedNumberDemo } from "@/components/qiuye-ui/demos/animated-number-
 import { ExpandableCardDemo } from "@/components/qiuye-ui/demos/expandable-card-demo";
 import { HoneycombViewDemo } from "@/components/qiuye-ui/demos/honeycomb-view-demo";
 import { AdaptivePointerDemo } from "@/components/qiuye-ui/demos/adaptive-pointer-demo";
+import { SpotlightTileDemo } from "@/components/qiuye-ui/demos/spotlight-tile-demo";
 
 // 导入演示组件
 import { ResponsiveTabsDemo } from "@/components/qiuye-ui/demos/responsive-tabs-demo";
@@ -58,6 +59,7 @@ import { MatrixEffectDemo } from "@/components/qiuye-ui/demos/matrix-effect-demo
 
 // TODO: 新增 qiuye-ui 自定义组件时需要完善 demo 文件
 const demoComponents = {
+  [ComponentId.SPOTLIGHT_TILE]: SpotlightTileDemo,
   [ComponentId.ADAPTIVE_POINTER]: AdaptivePointerDemo,
   [ComponentId.HONEYCOMB_VIEW]: HoneycombViewDemo,
   [ComponentId.EXPANDABLE_CARD]: ExpandableCardDemo,
@@ -85,6 +87,7 @@ import {
   ExpandableCardSimpleDemo,
   HoneycombViewSimpleDemo,
   AdaptivePointerSimpleDemo,
+  SpotlightTileSimpleDemo,
   ResponsiveTabsSimpleDemo,
   ClipPathTabsSimpleDemo,
   SegmentedControlSimpleDemo,
@@ -104,6 +107,7 @@ import {
 
 // 精简的单例演示组件
 const simpleDemoComponents = {
+  [ComponentId.SPOTLIGHT_TILE]: SpotlightTileSimpleDemo,
   [ComponentId.ADAPTIVE_POINTER]: AdaptivePointerSimpleDemo,
   [ComponentId.HONEYCOMB_VIEW]: HoneycombViewSimpleDemo,
   [ComponentId.EXPANDABLE_CARD]: ExpandableCardSimpleDemo,

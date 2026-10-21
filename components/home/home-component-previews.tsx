@@ -5,6 +5,7 @@ import { AnimatedNumberPreview } from "@/components/qiuye-ui/demos/animated-numb
 import { ExpandableCardPreview } from "@/components/qiuye-ui/demos/expandable-card-demo";
 import { HoneycombViewPreview } from "@/components/qiuye-ui/demos/honeycomb-view-demo";
 import { AdaptivePointerPreview } from "@/components/qiuye-ui/demos/adaptive-pointer-demo";
+import { SpotlightTilePreview } from "@/components/qiuye-ui/demos/spotlight-tile-demo";
 import {
   ArrowUpRightIcon,
   BellOffIcon,
@@ -1486,6 +1487,7 @@ export const homePreviewComponents: Partial<
   [ComponentId.EXPANDABLE_CARD]: ExpandableCardPreview,
   [ComponentId.HONEYCOMB_VIEW]: HoneycombViewPreview,
   [ComponentId.ADAPTIVE_POINTER]: AdaptivePointerPreview,
+  [ComponentId.SPOTLIGHT_TILE]: SpotlightTilePreview,
   [ComponentId.MATRIX_EFFECT]: MatrixEffectPreview,
   [ComponentId.RESPONSIVE_TABS]: ResponsiveTabsPreview,
   [ComponentId.CLIP_PATH_TABS]: ClipPathTabsPreview,

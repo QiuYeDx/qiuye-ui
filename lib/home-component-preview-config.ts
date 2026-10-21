@@ -1,6 +1,6 @@
 import { ComponentId } from "@/lib/component-constants";
 
-export type HomePreviewSize = "wide" | "tall" | "square" | "compact";
+export type HomePreviewSize = "feature" | "wide" | "tall" | "square" | "compact";
 
 export interface HomePreviewConfig {
   id: ComponentId;
@@ -17,6 +17,7 @@ export const homePreviewConfigs: HomePreviewConfig[] = [
     featured: true,
   },
   { id: ComponentId.HONEYCOMB_VIEW, size: "tall", featured: true },
+  { id: ComponentId.SPOTLIGHT_TILE, size: "feature", featured: true },
   { id: ComponentId.ADAPTIVE_POINTER, size: "wide", featured: true },
   {
     id: ComponentId.DOT_GLASS,

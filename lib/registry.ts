@@ -147,6 +147,176 @@ const matrixEffectRuntimeProps: PropDefinition[] = [
 
 // 组件注册表
 export const componentRegistry: ComponentRegistry = {
+  [ComponentId.SPOTLIGHT_TILE]: {
+    name: "SpotlightTile",
+    description:
+      "跟随指针取光的聚光卡片：1px 边框沿指针位置亮起一圈色调光并铺一层内部柔光，角落的大号淡水印图标悬停时漂移转正，带色调渐变的图标底板轻微倾斜、箭头朝右上轻推。色调可为任意 CSS 颜色；标题链接铺满整张卡片而内层按钮仍可点击，支持 asChild、徽标、标签、进入视口时错开上浮、平滑圆角与减少动态效果。",
+    category: "内容与媒体",
+    dependencies: ["motion", "radix-ui", "lucide-react"],
+    files: {
+      component: "components/qiuye-ui/spotlight-tile.tsx",
+      demo: "components/qiuye-ui/demos/spotlight-tile-demo.tsx",
+    },
+    propsInfo: [
+      {
+        componentName: "SpotlightTile",
+        props: [
+          {
+            name: "tone",
+            type: "string",
+            description: "卡片色调，任意 CSS 颜色（#hex、oklch()、var(--chart-1) 等）；边框光、内部柔光、图标底板、水印、悬停阴影与聚焦描边都由它派生。",
+            required: false,
+            default: "\"var(--primary)\"",
+          },
+          {
+            name: "icon",
+            type: "ReactNode",
+            description: "左上角图标，建议传入 24×24 的线性图标（如 lucide-react），显示在带色调渐变的平滑圆角底板中。",
+            required: false,
+          },
+          {
+            name: "watermark",
+            type: "boolean | ReactNode",
+            description: "右下角的大号淡水印：true 复用 icon，传入节点使用该节点，false 不显示；悬停时漂移并转正。",
+            required: false,
+            default: "true",
+          },
+          {
+            name: "badge",
+            type: "ReactNode",
+            description: "图标右侧的小标签，如 Beta、New。",
+            required: false,
+          },
+          {
+            name: "title",
+            type: "ReactNode",
+            description: "标题；传入 href 时被包裹为铺满整张卡片的链接。",
+            required: false,
+          },
+          {
+            name: "titleAs",
+            type: "\"h2\" | \"h3\" | \"h4\" | \"p\"",
+            description: "标题使用的标签。",
+            required: false,
+            default: "\"h3\"",
+          },
+          {
+            name: "description",
+            type: "ReactNode",
+            description: "标题下方的描述，默认最多两行。",
+            required: false,
+          },
+          {
+            name: "chips",
+            type: "ReactNode[]",
+            description: "底部的特性标签。",
+            required: false,
+          },
+          {
+            name: "actions",
+            type: "ReactNode",
+            description: "底部右侧的操作区，浮在卡片链接之上，其中的按钮可以单独点击。",
+            required: false,
+          },
+          {
+            name: "href",
+            type: "string",
+            description: "卡片链接地址；设置后标题成为链接，点击区域铺满整张卡片。",
+            required: false,
+          },
+          {
+            name: "linkProps",
+            type: "AnchorHTMLAttributes",
+            description: "传给标题链接的其他属性，如 target、rel、onClick。",
+            required: false,
+          },
+          {
+            name: "arrow",
+            type: "boolean",
+            description: "是否显示右上角箭头，悬停时朝右上轻推。",
+            required: false,
+            default: "设置了 href 或 asChild 时为 true",
+          },
+          {
+            name: "asChild",
+            type: "boolean",
+            description: "把卡片样式应用到唯一子元素（如 <a>），让整张卡片成为该元素；子元素自身的子节点显示在描述下方，此时 actions 中不要放交互元素。",
+            required: false,
+            default: "false",
+          },
+          {
+            name: "appear",
+            type: "boolean",
+            description: "进入视口时是否上浮淡入；减少动态效果时只做不位移的短淡入。",
+            required: false,
+            default: "true",
+          },
+          {
+            name: "index",
+            type: "number",
+            description: "网格中的序号，每张错开 50ms 上浮淡入。",
+            required: false,
+            default: "0",
+          },
+          {
+            name: "radius",
+            type: "number",
+            description: "平滑圆角半径（px）。",
+            required: false,
+            default: "20",
+          },
+          {
+            name: "smoothing",
+            type: "number",
+            description: "平滑圆角强度，范围 0..1。",
+            required: false,
+            default: "0.72",
+          },
+          {
+            name: "children",
+            type: "ReactNode",
+            description: "显示在描述与底部之间的自定义内容。",
+            required: false,
+          },
+          {
+            name: "className",
+            type: "string",
+            description: "根元素类名，可覆盖内边距、最小高度等布局样式。",
+            required: false,
+          },
+        ],
+      },
+      {
+        componentName: "SpotlightTileLink",
+        props: [
+          {
+            name: "asChild",
+            type: "boolean",
+            description: "把链接行为应用到唯一子元素，用于 next/link、react-router Link 等路由链接。",
+            required: false,
+            default: "false",
+          },
+          {
+            name: "href",
+            type: "string",
+            description: "链接地址。",
+            required: false,
+          },
+          {
+            name: "...props",
+            type: "AnchorHTMLAttributes",
+            description: "其他原生 <a> 属性。",
+            required: false,
+          },
+        ],
+      },
+    ],
+    version: "1.0.0",
+    author: "QiuYeDx",
+    tags: ["卡片", "聚光", "指针光效", "工具入口", "便当格", "链接卡片", "平滑圆角"],
+    cliName: "spotlight-tile",
+    basicUsage: basicUsageExamples[ComponentId.SPOTLIGHT_TILE],
+  },
   [ComponentId.ADAPTIVE_POINTER]: {
     name: "AdaptivePointer",
     description:

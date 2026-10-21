@@ -12,6 +12,7 @@ import type { HomePreviewSize } from "@/lib/home-component-preview-config";
 import { cn } from "@/lib/utils";
 
 const sizeClassName: Record<HomePreviewSize, string> = {
+  feature: "sm:col-span-2 lg:row-span-2 min-h-[500px]",
   wide: "sm:col-span-2 min-h-[320px]",
   tall: "lg:row-span-2 min-h-[420px]",
   square: "min-h-[320px]",

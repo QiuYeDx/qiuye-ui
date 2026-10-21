@@ -31,6 +31,7 @@
 - `expandable-card`
 - `honeycomb-view`
 - `adaptive-pointer`
+- `spotlight-tile`
 
 ## 核心目录
 
