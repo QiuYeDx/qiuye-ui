@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRightIcon, RocketIcon } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 
+import { withReducedMotion } from "@/components/home/home-entrance-motion";
 import { Button } from "@/components/ui/button";
 
 const CTA_EASE = [0.22, 1, 0.36, 1] as const;
@@ -52,20 +53,32 @@ const ctaActionVariants = {
   },
 } satisfies Variants;
 
+const ctaVariants = {
+  container: ctaContainerVariants,
+  item: ctaItemVariants,
+  action: ctaActionVariants,
+};
+
+const reducedCtaVariants = {
+  container: withReducedMotion(ctaContainerVariants),
+  item: withReducedMotion(ctaItemVariants),
+  action: withReducedMotion(ctaActionVariants),
+};
+
 export function HomeCta() {
   const prefersReducedMotion = useReducedMotion();
-  const initialState = prefersReducedMotion ? "visible" : "hidden";
+  const variants = prefersReducedMotion ? reducedCtaVariants : ctaVariants;
 
   return (
     <motion.section
       className="px-4 py-16 sm:px-6 lg:px-8"
-      variants={ctaContainerVariants}
-      initial={initialState}
+      variants={variants.container}
+      initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.35 }}
     >
       <div className="mx-auto grid max-w-screen-lg gap-8 md:grid-cols-[1fr_auto] md:items-center">
-        <motion.div variants={ctaItemVariants}>
+        <motion.div variants={variants.item}>
           <h2 className="text-3xl font-semibold">从一个组件开始。</h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
             QiuYe UI 组件可以通过 shadcn/ui registry 方式按需安装。
@@ -74,9 +87,9 @@ export function HomeCta() {
         </motion.div>
         <motion.div
           className="flex flex-col gap-3 flex-row"
-          variants={ctaContainerVariants}
+          variants={variants.container}
         >
-          <motion.div variants={ctaActionVariants}>
+          <motion.div variants={variants.action}>
             <Button
               asChild
               className="gap-1.5 pl-4 pr-3 has-[>svg]:pl-4 has-[>svg]:pr-3"
@@ -87,7 +100,7 @@ export function HomeCta() {
               </Link>
             </Button>
           </motion.div>
-          <motion.div variants={ctaActionVariants}>
+          <motion.div variants={variants.action}>
             <Button
               asChild
               variant="outline"

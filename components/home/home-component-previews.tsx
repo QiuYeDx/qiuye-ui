@@ -313,7 +313,7 @@ function ScrollableDialogPreview() {
           initial={false}
           animate={{
             opacity: ctaVisible ? 1 : 0,
-            y: prefersReducedMotion ? 0 : ctaVisible ? 0 : 16,
+            y: ctaVisible ? 0 : 16,
             scale: ctaVisible ? 1 : 0.975,
           }}
           transition={{
@@ -1129,7 +1129,7 @@ function MarkdownRendererPreview() {
           initial={false}
           animate={{
             opacity: ctaVisible ? 1 : 0,
-            y: prefersReducedMotion ? 0 : ctaVisible ? 0 : 16,
+            y: ctaVisible ? 0 : 16,
             scale: ctaVisible ? 1 : 0.975,
           }}
           transition={{
@@ -1367,7 +1367,7 @@ function TourPreview() {
           initial={false}
           animate={{
             opacity: ctaVisible ? 1 : 0,
-            y: prefersReducedMotion ? 0 : ctaVisible ? 0 : 16,
+            y: ctaVisible ? 0 : 16,
             scale: ctaVisible ? 1 : 0.975,
           }}
           transition={{

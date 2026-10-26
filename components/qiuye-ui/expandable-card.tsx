@@ -12,7 +12,6 @@ import {
   useInView,
   useMotionTemplate,
   useMotionValue,
-  useReducedMotion,
   useSpring,
   useTransform,
   type MotionValue,
@@ -38,6 +37,17 @@ const HOVER_SHADOW =
 // 浮层的深阴影放在独立图层上，只动画该层的 opacity：
 // 不逐帧改写阴影颜色，也不改写会被整棵子树继承的自定义属性。
 const LIFT_SHADOW = "0 40px 100px -40px rgb(0 0 0 / 0.5)";
+
+// 用服务端快照保持 hydration 一致：高光层与 hover / tap 手势都随该值增减，
+// useReducedMotion() 在服务端为 null、客户端首帧即为 true，会让两端结构不一致。
+function subscribeReducedMotion(notify: () => void) {
+  const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+  media.addEventListener("change", notify);
+  return () => media.removeEventListener("change", notify);
+}
+const getReducedMotion = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const getServerReducedMotion = () => false;
 
 // 飞行中覆盖 SmoothCorners：普通圆角走合成器的快速裁切路径。
 const roundCorners = (radius: number) =>
@@ -574,7 +584,11 @@ export function ExpandableCard({
   sheetClassName,
   contentClassName,
 }: ExpandableCardProps) {
-  const reduceMotion = useReducedMotion() ?? false;
+  const reduceMotion = React.useSyncExternalStore(
+    subscribeReducedMotion,
+    getReducedMotion,
+    getServerReducedMotion,
+  );
   const cardRef = React.useRef<HTMLButtonElement>(null);
   const panelRef = React.useRef<HTMLDivElement>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);

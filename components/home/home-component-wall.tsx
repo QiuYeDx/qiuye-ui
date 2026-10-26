@@ -3,6 +3,7 @@
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import * as React from "react";
 
+import { withReducedMotion } from "@/components/home/home-entrance-motion";
 import { HomePreviewCard } from "@/components/home/home-preview-card";
 import { homePreviewComponents } from "@/components/home/home-component-previews";
 import {
@@ -84,6 +85,20 @@ const wallCardVariants = {
   },
 } satisfies Variants;
 
+const wallVariants = {
+  section: wallSectionVariants,
+  header: wallHeaderVariants,
+  grid: wallGridVariants,
+  card: wallCardVariants,
+};
+
+const reducedWallVariants = {
+  section: withReducedMotion(wallSectionVariants),
+  header: withReducedMotion(wallHeaderVariants),
+  grid: withReducedMotion(wallGridVariants),
+  card: withReducedMotion(wallCardVariants),
+};
+
 function createPreviewItems(): PreviewItem[] {
   const configuredIds = new Set(homePreviewConfigs.map((config) => config.id));
 
@@ -126,18 +141,18 @@ function createPreviewItems(): PreviewItem[] {
 export function HomeComponentWall() {
   const items = React.useMemo(() => createPreviewItems(), []);
   const prefersReducedMotion = useReducedMotion();
-  const initialState = prefersReducedMotion ? "visible" : "hidden";
+  const variants = prefersReducedMotion ? reducedWallVariants : wallVariants;
 
   return (
     <motion.section
       className="border-y bg-muted/30 px-4 py-6 sm:px-6 lg:px-8"
-      variants={wallSectionVariants}
-      initial={initialState}
+      variants={variants.section}
+      initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.01, margin: "0px 0px 18% 0px" }}
     >
       <div className="mx-auto max-w-screen-2xl">
-        <motion.div className="mb-5" variants={wallHeaderVariants}>
+        <motion.div className="mb-5" variants={variants.header}>
           <div>
             <p className="text-sm font-medium text-muted-foreground">
               Component previews
@@ -148,7 +163,7 @@ export function HomeComponentWall() {
 
         <motion.div
           className="grid auto-rows-[minmax(240px,auto)] grid-flow-dense grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-          variants={wallGridVariants}
+          variants={variants.grid}
         >
           {items.map(({ component, config, Preview }) => (
             <HomePreviewCard
@@ -156,7 +171,7 @@ export function HomeComponentWall() {
               component={component}
               size={config.size}
               featured={config.featured}
-              variants={wallCardVariants}
+              variants={variants.card}
               className="will-change-transform"
             >
               <Preview />
