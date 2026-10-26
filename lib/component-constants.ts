@@ -26,6 +26,9 @@ export enum ComponentId {
   HONEYCOMB_VIEW = "honeycomb-view",
   ADAPTIVE_POINTER = "adaptive-pointer",
   SPOTLIGHT_TILE = "spotlight-tile",
+  MASONRY = "masonry",
+  CAROUSEL = "carousel",
+  MORPH_TOOLTIP = "morph-tooltip",
 }
 
 // 组件 ID 数组，方便遍历
@@ -41,6 +44,61 @@ export type BasicUsageExamples = Record<ComponentId, BasicUsageExample>;
 
 // 基础使用示例数据
 export const basicUsageExamples: BasicUsageExamples = {
+  [ComponentId.MASONRY]: {
+    import: `import { Masonry, MasonryImage } from "@/components/qiuye-ui/masonry";`,
+    usage: `<Masonry
+  items={photos}
+  getItemKey={(photo) => photo.id}
+  renderItem={(photo) => (
+    <MasonryImage
+      src={photo.src}
+      alt={photo.alt}
+      width={photo.width} // 只用来得出宽高比，加载前后不重排
+      height={photo.height}
+      className="rounded-xl"
+    />
+  )}
+  minColumnWidth={220} // 按容器宽度自动计算列数
+  gap={16}
+  loading={loading} // 首屏铺满骨架；加载更多时骨架落在最短的几列底部
+  hasMore={hasMore}
+  onLoadMore={loadMore} // 最短一列接近底部时触发
+/>`,
+  },
+  [ComponentId.CAROUSEL]: {
+    import: `import {
+  Carousel,
+  CarouselContent,
+  CarouselImage,
+} from "@/components/qiuye-ui/carousel";`,
+    usage: `<Carousel loop autoplay parallax={0.2}>
+  <CarouselContent className="aspect-video rounded-2xl">
+    {banners.map((banner) => (
+      <CarouselImage key={banner.id} src={banner.src} alt={banner.alt} overlay>
+        <h3 className="p-6 pb-12 text-2xl font-semibold">{banner.title}</h3>
+      </CarouselImage>
+    ))}
+  </CarouselContent>
+</Carousel>`,
+  },
+  [ComponentId.MORPH_TOOLTIP]: {
+    import: `import {
+  MorphTooltip,
+  MorphTooltipProvider,
+} from "@/components/qiuye-ui/morph-tooltip";`,
+    usage: `<MorphTooltipProvider>
+  <MorphTooltip content="加粗" shortcut={["⌘", "B"]}>
+    <Button size="icon" variant="ghost" aria-label="加粗">
+      <BoldIcon />
+    </Button>
+  </MorphTooltip>
+  <MorphTooltip content="斜体" shortcut={["⌘", "I"]}>
+    <Button size="icon" variant="ghost" aria-label="斜体">
+      <ItalicIcon />
+    </Button>
+  </MorphTooltip>
+</MorphTooltipProvider>`,
+  },
   [ComponentId.SPOTLIGHT_TILE]: {
     import: `import { SpotlightTile } from "@/components/qiuye-ui/spotlight-tile";
 import { Button } from "@/components/ui/button";

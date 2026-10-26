@@ -32,6 +32,9 @@
 - `honeycomb-view`
 - `adaptive-pointer`
 - `spotlight-tile`
+- `masonry`
+- `carousel`
+- `morph-tooltip`
 
 ## 核心目录
 

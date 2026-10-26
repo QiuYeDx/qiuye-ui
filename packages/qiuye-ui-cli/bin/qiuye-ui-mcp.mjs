@@ -31,6 +31,9 @@ const DEFAULT_COMPONENT_NAMES = [
   "honeycomb-view",
   "adaptive-pointer",
   "spotlight-tile",
+  "masonry",
+  "carousel",
+  "morph-tooltip",
 ];
 
 function parseArgs(argv) {

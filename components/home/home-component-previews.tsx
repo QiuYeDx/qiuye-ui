@@ -6,6 +6,9 @@ import { ExpandableCardPreview } from "@/components/qiuye-ui/demos/expandable-ca
 import { HoneycombViewPreview } from "@/components/qiuye-ui/demos/honeycomb-view-demo";
 import { AdaptivePointerPreview } from "@/components/qiuye-ui/demos/adaptive-pointer-demo";
 import { SpotlightTilePreview } from "@/components/qiuye-ui/demos/spotlight-tile-demo";
+import { MasonryPreview } from "@/components/qiuye-ui/demos/masonry-demo";
+import { CarouselPreview } from "@/components/qiuye-ui/demos/carousel-demo";
+import { MorphTooltipPreview } from "@/components/qiuye-ui/demos/morph-tooltip-demo";
 import {
   ArrowUpRightIcon,
   BellOffIcon,
@@ -1488,6 +1491,9 @@ export const homePreviewComponents: Partial<
   [ComponentId.HONEYCOMB_VIEW]: HoneycombViewPreview,
   [ComponentId.ADAPTIVE_POINTER]: AdaptivePointerPreview,
   [ComponentId.SPOTLIGHT_TILE]: SpotlightTilePreview,
+  [ComponentId.MASONRY]: MasonryPreview,
+  [ComponentId.CAROUSEL]: CarouselPreview,
+  [ComponentId.MORPH_TOOLTIP]: MorphTooltipPreview,
   [ComponentId.MATRIX_EFFECT]: MatrixEffectPreview,
   [ComponentId.RESPONSIVE_TABS]: ResponsiveTabsPreview,
   [ComponentId.CLIP_PATH_TABS]: ClipPathTabsPreview,

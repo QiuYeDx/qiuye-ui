@@ -39,6 +39,9 @@ import { ExpandableCardDemo } from "@/components/qiuye-ui/demos/expandable-card-
 import { HoneycombViewDemo } from "@/components/qiuye-ui/demos/honeycomb-view-demo";
 import { AdaptivePointerDemo } from "@/components/qiuye-ui/demos/adaptive-pointer-demo";
 import { SpotlightTileDemo } from "@/components/qiuye-ui/demos/spotlight-tile-demo";
+import { MasonryDemo } from "@/components/qiuye-ui/demos/masonry-demo";
+import { CarouselDemo } from "@/components/qiuye-ui/demos/carousel-demo";
+import { MorphTooltipDemo } from "@/components/qiuye-ui/demos/morph-tooltip-demo";
 
 // 导入演示组件
 import { ResponsiveTabsDemo } from "@/components/qiuye-ui/demos/responsive-tabs-demo";
@@ -59,6 +62,9 @@ import { MatrixEffectDemo } from "@/components/qiuye-ui/demos/matrix-effect-demo
 
 // TODO: 新增 qiuye-ui 自定义组件时需要完善 demo 文件
 const demoComponents = {
+  [ComponentId.MASONRY]: MasonryDemo,
+  [ComponentId.CAROUSEL]: CarouselDemo,
+  [ComponentId.MORPH_TOOLTIP]: MorphTooltipDemo,
   [ComponentId.SPOTLIGHT_TILE]: SpotlightTileDemo,
   [ComponentId.ADAPTIVE_POINTER]: AdaptivePointerDemo,
   [ComponentId.HONEYCOMB_VIEW]: HoneycombViewDemo,
@@ -88,6 +94,9 @@ import {
   HoneycombViewSimpleDemo,
   AdaptivePointerSimpleDemo,
   SpotlightTileSimpleDemo,
+  MasonrySimpleDemo,
+  CarouselSimpleDemo,
+  MorphTooltipSimpleDemo,
   ResponsiveTabsSimpleDemo,
   ClipPathTabsSimpleDemo,
   SegmentedControlSimpleDemo,
@@ -107,6 +116,9 @@ import {
 
 // 精简的单例演示组件
 const simpleDemoComponents = {
+  [ComponentId.MASONRY]: MasonrySimpleDemo,
+  [ComponentId.CAROUSEL]: CarouselSimpleDemo,
+  [ComponentId.MORPH_TOOLTIP]: MorphTooltipSimpleDemo,
   [ComponentId.SPOTLIGHT_TILE]: SpotlightTileSimpleDemo,
   [ComponentId.ADAPTIVE_POINTER]: AdaptivePointerSimpleDemo,
   [ComponentId.HONEYCOMB_VIEW]: HoneycombViewSimpleDemo,

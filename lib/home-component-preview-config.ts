@@ -18,6 +18,9 @@ export const homePreviewConfigs: HomePreviewConfig[] = [
   },
   { id: ComponentId.HONEYCOMB_VIEW, size: "tall", featured: true },
   { id: ComponentId.SPOTLIGHT_TILE, size: "feature", featured: true },
+  { id: ComponentId.CAROUSEL, size: "wide", featured: true },
+  { id: ComponentId.MASONRY, size: "tall", featured: true },
+  { id: ComponentId.MORPH_TOOLTIP, size: "square", featured: true },
   { id: ComponentId.ADAPTIVE_POINTER, size: "wide", featured: true },
   {
     id: ComponentId.DOT_GLASS,

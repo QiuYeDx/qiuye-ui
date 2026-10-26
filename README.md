@@ -76,6 +76,9 @@ v1 快照不会再更新。组件之间的依赖（如 `@qiuye-ui/smooth-corners
 | [HoneycombView](https://ui.qiuyedx.com/components/honeycomb-view) | `honeycomb-view` | Apple Watch 风格蜂窝图标视图，边缘图标连续缩小，支持四向拖动与上下滚动两种模式。 |
 | [AdaptivePointer](https://ui.qiuyedx.com/components/adaptive-pointer) | `adaptive-pointer` | iPadOS 风格自适应指针：填充层变形为目标下方的圆角板并带阻尼偏移，正文上变为 I 形竖条；可选外环缩成小圆标出真实指针位置。 |
 | [SpotlightTile](https://ui.qiuyedx.com/components/spotlight-tile) | `spotlight-tile` | 聚光卡片：1px 边框沿指针位置亮起色调光，角落水印图标与图标底板随悬停漂移，标题链接铺满整张卡片，内层按钮仍可点击。 |
+| [Masonry](https://ui.qiuyedx.com/components/masonry) | `masonry` | 瀑布流：按容器宽度自适应列数、稳定列排布，自带同步微光的骨架屏与加载更多，增删、筛选和列数变化时各项沿弹簧滑到新位置。 |
+| [Carousel](https://ui.qiuyedx.com/components/carousel) | `carousel` | 轮播图：拖拽 / 触摸 1:1 跟手、橡皮筋阻尼、按速度投影吸附，支持无限循环、每屏多张、渐隐与中心缩放、视差、自动播放与图片填充模式。 |
+| [MorphTooltip](https://ui.qiuyedx.com/components/morph-tooltip) | `morph-tooltip` | 形变提示气泡：高级黑平滑圆角，同一范围内共享一个气泡，只有第一次悬停需要等待，在元素之间移动时气泡滑动并连续变形。 |
 | [Code Block](https://ui.qiuyedx.com/components/code-block)                           | `code-block`              | 代码块与文件面板，支持主题、行号、Diff、行高亮、折叠和复制。                           |
 | [Color Picker](https://ui.qiuyedx.com/components/color-picker)                       | `color-picker`            | HSV 取色器，支持 Alpha、触控、预设色、最近颜色和 Popover / Inline 模式。               |
 | [Dot Glass](https://ui.qiuyedx.com/components/dot-glass)                             | `dot-glass`               | 点阵开孔毛玻璃效果，用于 Header、Navbar 等前景容器。                                   |

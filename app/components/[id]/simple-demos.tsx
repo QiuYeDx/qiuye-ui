@@ -615,3 +615,6 @@ export { ExpandableCardPreview as ExpandableCardSimpleDemo } from "@/components/
 export { HoneycombViewPreview as HoneycombViewSimpleDemo } from "@/components/qiuye-ui/demos/honeycomb-view-demo";
 export { AdaptivePointerPreview as AdaptivePointerSimpleDemo } from "@/components/qiuye-ui/demos/adaptive-pointer-demo";
 export { SpotlightTilePreview as SpotlightTileSimpleDemo } from "@/components/qiuye-ui/demos/spotlight-tile-demo";
+export { MasonryPreview as MasonrySimpleDemo } from "@/components/qiuye-ui/demos/masonry-demo";
+export { CarouselPreview as CarouselSimpleDemo } from "@/components/qiuye-ui/demos/carousel-demo";
+export { MorphTooltipPreview as MorphTooltipSimpleDemo } from "@/components/qiuye-ui/demos/morph-tooltip-demo";
