@@ -881,7 +881,7 @@ export function ExpandableCard({
           }}
           transition={PRESS_SPRING}
           className={cn(
-            "group relative isolate block h-[28rem] w-full cursor-pointer overflow-hidden border bg-card p-0 text-start text-card-foreground outline-none [-webkit-tap-highlight-color:transparent]",
+            "group/expandable-card relative isolate block h-[28rem] w-full cursor-pointer overflow-hidden border bg-card p-0 text-start text-card-foreground outline-none [-webkit-tap-highlight-color:transparent]",
             "[--ec-card-shadow:var(--ec-rest-shadow)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             "[transition:border-color_250ms_ease-out,box-shadow_250ms_ease-out] hover:border-foreground/15 hover:[--ec-card-shadow:var(--ec-hover-shadow)]",
             className,
@@ -906,7 +906,7 @@ export function ExpandableCard({
                   aria-hidden="true"
                   className={cn(
                     pillClassName,
-                    "group-hover:bg-foreground group-hover:text-background",
+                    "group-hover/expandable-card:bg-foreground group-hover/expandable-card:text-background",
                   )}
                 >
                   {actionLabel}

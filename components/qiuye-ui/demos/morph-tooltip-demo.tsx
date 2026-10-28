@@ -118,13 +118,14 @@ function DockIcon({ app, className }: { app: DockApp; className?: string }) {
   const Icon = app.icon;
   // 按钮本身（悬停区域与气泡锚点）保持不动，只让里面的图标层上浮：
   // 移动按钮会带着气泡一起上下位移，指针停在图标底边时还会在悬停与离开之间反复抖动。
+  // 用具名分组 group/dock：首页预览卡片本身带 group，普通 group-hover 会在进入卡片时让所有图标一起上浮。
   return (
     <MorphTooltip content={app.label} shortcut={app.shortcut}>
       <button
         type="button"
         aria-label={app.label}
         className={cn(
-          "group relative flex size-9 shrink-0 rounded-[11px] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background @md:size-11",
+          "group/dock relative flex size-9 shrink-0 rounded-[11px] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background @md:size-11",
           app.hideClassName,
           className,
         )}
@@ -132,7 +133,7 @@ function DockIcon({ app, className }: { app: DockApp; className?: string }) {
         <SmoothCorners asChild radius={11} smoothing={0.6}>
           <span
             aria-hidden
-            className="flex size-full items-center justify-center rounded-[11px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.25),0_1px_2px_rgb(0_0_0/0.18)] transition-[translate,scale] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:-translate-y-1 group-active:scale-95 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0"
+            className="flex size-full items-center justify-center rounded-[11px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.25),0_1px_2px_rgb(0_0_0/0.18)] transition-[translate,scale] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/dock:-translate-y-1 group-active/dock:scale-95 motion-reduce:transition-none motion-reduce:group-hover/dock:translate-y-0"
             style={{ background: `linear-gradient(160deg, ${app.colors[0]}, ${app.colors[1]})` }}
           >
             <Icon className="size-[18px] @md:size-[22px]" strokeWidth={2.1} />

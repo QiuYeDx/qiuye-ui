@@ -1078,7 +1078,7 @@ function FeedCard({ item, onRemove }: { item: FeedItem; onRemove: () => void }) 
       type="button"
       aria-label={`移除「${feedItemTitle(item)}」`}
       onClick={onRemove}
-      className="absolute top-2 right-2 z-10 flex size-6 items-center justify-center rounded-full border bg-background/85 text-muted-foreground opacity-0 shadow-sm backdrop-blur transition-[opacity,color] duration-150 group-hover:opacity-100 after:absolute after:-inset-2.5 after:content-[''] hover:text-foreground focus-visible:opacity-100 pointer-coarse:top-1.5 pointer-coarse:right-1.5 pointer-coarse:bg-background/70 pointer-coarse:opacity-75 pointer-coarse:shadow-none"
+      className="absolute top-2 right-2 z-10 flex size-6 items-center justify-center rounded-full border bg-background/85 text-muted-foreground opacity-0 shadow-sm backdrop-blur transition-[opacity,color] duration-150 group-hover/feed:opacity-100 after:absolute after:-inset-2.5 after:content-[''] hover:text-foreground focus-visible:opacity-100 pointer-coarse:top-1.5 pointer-coarse:right-1.5 pointer-coarse:bg-background/70 pointer-coarse:opacity-75 pointer-coarse:shadow-none"
     >
       <XIcon className="size-3.5" />
     </button>
@@ -1086,7 +1086,7 @@ function FeedCard({ item, onRemove }: { item: FeedItem; onRemove: () => void }) 
 
   if (item.kind === "photo") {
     return (
-      <div className="group relative overflow-hidden rounded-xl border bg-card">
+      <div className="group/feed relative overflow-hidden rounded-xl border bg-card">
         {removeButton}
         <MasonryImage
           src={item.photo.src}
@@ -1107,7 +1107,7 @@ function FeedCard({ item, onRemove }: { item: FeedItem; onRemove: () => void }) 
 
   if (item.kind === "quote") {
     return (
-      <figure className="group relative rounded-xl border bg-card p-4">
+      <figure className="group/feed relative rounded-xl border bg-card p-4">
         {removeButton}
         <QuoteIcon aria-hidden className="size-4 text-muted-foreground/60" />
         <blockquote className="mt-2 text-[15px] leading-6 font-medium tracking-[-0.01em]">
@@ -1120,7 +1120,7 @@ function FeedCard({ item, onRemove }: { item: FeedItem; onRemove: () => void }) 
 
   if (item.kind === "note") {
     return (
-      <article className="group relative rounded-xl border bg-card p-4">
+      <article className="group/feed relative rounded-xl border bg-card p-4">
         {removeButton}
         <h4 className="pr-6 text-sm font-semibold">{item.title}</h4>
         <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{item.body}</p>
@@ -1130,7 +1130,7 @@ function FeedCard({ item, onRemove }: { item: FeedItem; onRemove: () => void }) 
 
   const max = Math.max(...item.trend);
   return (
-    <div className="group relative rounded-xl border bg-card p-4">
+    <div className="group/feed relative rounded-xl border bg-card p-4">
       {removeButton}
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <TrendingUpIcon aria-hidden className="size-3.5" />

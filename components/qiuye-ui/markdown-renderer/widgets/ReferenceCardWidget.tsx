@@ -27,11 +27,11 @@ function ReferenceCardWidgetComponent({
       href={href}
       target={isExternal ? "_blank" : undefined}
       rel={isExternal ? "noopener noreferrer" : undefined}
-      className="group block rounded-lg border border-border/60 bg-card/50 px-4 py-3 no-underline transition-colors hover:border-primary/30 hover:bg-primary/5"
+      className="group/reference block rounded-lg border border-border/60 bg-card/50 px-4 py-3 no-underline transition-colors hover:border-primary/30 hover:bg-primary/5"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
+          <p className="text-sm font-medium text-foreground group-hover/reference:text-primary transition-colors truncate">
             {title}
           </p>
           {description && (
@@ -40,7 +40,7 @@ function ReferenceCardWidgetComponent({
             </p>
           )}
         </div>
-        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50 group-hover:text-primary/60 transition-colors mt-0.5" />
+        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50 group-hover/reference:text-primary/60 transition-colors mt-0.5" />
       </div>
       <p className="mt-1.5 text-[11px] text-muted-foreground/60 font-mono truncate">
         {href}
