@@ -216,6 +216,13 @@ const WHEEL_SNAP_DELAY = 150;
 const WHEEL_IDLE = 200;
 // 分页时触控板滑过视口宽度的这个比例就朝滑动方向翻一页（不必过半）。
 const WHEEL_PAGE_RATIO = 0.15;
+// 触控板松手后系统还会继续发一串逐帧衰减的惯性 wheel（浏览器不暴露手势阶段）。
+// 同向的最近这么多次位移逐次不增、且末次比首次小一成以上，即视为手指已离开：
+// 立即按速度吸附，余下的惯性事件只吞掉不再移动；明显变大或反向则是新的一次滑动。
+const WHEEL_MOMENTUM_WINDOW = 5;
+const WHEEL_MOMENTUM_DECAY = 0.9;
+const WHEEL_REGAIN_RATIO = 1.5;
+const WHEEL_REGAIN_SLOP = 2;
 // 按下接住动画时，离目标还有这么远（px）或速度超过这个值（px/s）视为仍在运动：
 // 这次轻点只用来停住，不触发幻灯片里的链接（与 iOS 一致）。
 const CATCH_DISTANCE = 2;
@@ -324,6 +331,35 @@ function velocityFrom(samples: Sample[], now: number) {
   const first = samples.find((sample) => last.t - sample.t <= VELOCITY_WINDOW);
   if (!first || first === last || last.t === first.t) return 0;
   return ((last.x - first.x) / (last.t - first.t)) * 1000;
+}
+
+interface WheelSample {
+  t: number;
+  dx: number;
+}
+
+/** 最近 WHEEL_MOMENTUM_WINDOW 次位移是否呈系统惯性那样的同向逐帧衰减。 */
+function isWheelMomentum(samples: WheelSample[]) {
+  if (samples.length < WHEEL_MOMENTUM_WINDOW) return false;
+  const sign = Math.sign(samples[0].dx);
+  let previous = Infinity;
+  for (const { dx } of samples) {
+    const magnitude = Math.abs(dx);
+    if (Math.sign(dx) !== sign || magnitude > previous) return false;
+    previous = magnitude;
+  }
+  return previous <= Math.abs(samples[0].dx) * WHEEL_MOMENTUM_DECAY;
+}
+
+/** 由最近几次 wheel 位移估算速度（px/s）。 */
+function wheelVelocity(samples: WheelSample[]) {
+  const first = samples[0];
+  const last = samples[samples.length - 1];
+  if (!first || !last) return 0;
+  if (last.t <= first.t) return last.dx * 60;
+  let distance = 0;
+  for (let i = 1; i < samples.length; i++) distance += samples[i].dx;
+  return (distance / (last.t - first.t)) * 1000;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1524,9 +1560,17 @@ export const Carousel = React.forwardRef<HTMLDivElement, CarouselProps>(
       target: number | null;
     }>({ id: 0, controls: null, target: null });
 
-    // 触控板手势：target 为跟随的目标位置，startVirtual 为手势开始时的吸附点；
-    // 停止 WHEEL_SNAP_DELAY 后由定时器吸附。
-    const wheelRef = React.useRef({ target: 0, time: -Infinity, startVirtual: 0 });
+    // 触控板手势：target 为跟随的目标位置，startVirtual 为手势开始时的吸附点，
+    // samples 为本次手势最近几次的位移；识别到松手惯性时立即吸附，否则停止 WHEEL_SNAP_DELAY 后由定时器吸附。
+    // coast 记录吸附后仍在到来的惯性：time 为上一次被吞掉的事件，last 为它的位移绝对值。
+    const wheelRef = React.useRef({
+      target: 0,
+      time: -Infinity,
+      startVirtual: 0,
+      origin: 0,
+      samples: [] as WheelSample[],
+      coast: { time: -Infinity, sign: 0, last: 0 },
+    });
     const wheelTimer = React.useRef<number | undefined>(undefined);
 
     const endWheel = React.useCallback(() => {
@@ -1891,14 +1935,65 @@ export const Carousel = React.forwardRef<HTMLDivElement, CarouselProps>(
 
     /** 触控板手势的吸附目标：最近的吸附点；分页时滑过 15% 视口宽就朝滑动方向翻一页。 */
     const wheelSnapTarget = React.useCallback((track: Track) => {
-      const { target: landing, startVirtual } = wheelRef.current;
+      const { target: landing, startVirtual, origin } = wheelRef.current;
+      const moved = landing - origin;
       let nearest = Math.round(virtualPosition(track, landing));
+      // 吸附途中又开始的手势：弹簧还没到位，当前位置可能更靠近上一页，不能逆着这次滑动的方向退回去。
+      if ((nearest - startVirtual) * moved < 0) nearest = startVirtual;
       if (track.paging && nearest === startVirtual) {
         const delta = landing - snapOffset(track, startVirtual);
-        if (Math.abs(delta) > track.width * WHEEL_PAGE_RATIO) nearest += Math.sign(delta);
+        if (Math.abs(delta) > track.width * WHEEL_PAGE_RATIO && delta * moved > 0) {
+          nearest += Math.sign(delta);
+        }
       }
       return track.loop ? nearest : clamp(nearest, 0, track.snaps.length - 1);
     }, []);
+
+    /**
+     * 触控板松手（识别到惯性）：与拖动松手一致，按速度选择吸附点，用带当前速度的弹簧直接滑过去，
+     * 不再先跟着系统惯性停到半路、等惯性结束再吸附。
+     */
+    const releaseWheel = React.useCallback(
+      (track: Track, velocity: number) => {
+        const { target: landing } = wheelRef.current;
+        const total = track.snaps.length;
+        let target: number;
+        if (track.paging) {
+          const pos = virtualPosition(track, landing);
+          target =
+            Math.abs(velocity) >= FLICK_VELOCITY
+              ? velocity > 0
+                ? Math.floor(pos + 1e-3) + 1
+                : Math.ceil(pos - 1e-3) - 1
+              : wheelSnapTarget(track);
+        } else {
+          target = Math.round(virtualPosition(track, landing + projectMomentum(velocity)));
+          const { startVirtual } = wheelRef.current;
+          if ((target - startVirtual) * velocity < 0) target = startVirtual;
+        }
+        if (!track.loop) target = clamp(target, 0, total - 1);
+        endWheel();
+        markInteraction();
+        virtualRef.current = target;
+        commitIndex(track.loop ? mod(target, total) : target, "user");
+        const to = snapOffset(track, target);
+        updateView(track, to, false);
+        runOffset(
+          to,
+          reducedRef.current
+            ? REDUCED_TWEEN
+            : {
+                type: "spring",
+                visualDuration: RELEASE_VISUAL_DURATION,
+                bounce: clamp(Math.abs(velocity) / RELEASE_BOUNCE_VELOCITY, 0, RELEASE_MAX_BOUNCE),
+                // 从屏幕上正在跟随的速度出发，衔接处没有顿挫。
+                velocity: offset.getVelocity(),
+                ...REST,
+              },
+        );
+      },
+      [commitIndex, endWheel, markInteraction, offset, runOffset, updateView, wheelSnapTarget],
+    );
 
     /** 结束一次按下（松手、取消、或按键已经松开的鼠标移动）。 */
     const finishPress = React.useCallback(
@@ -2178,21 +2273,46 @@ export const Carousel = React.forwardRef<HTMLDivElement, CarouselProps>(
         if (!dx) return;
         event.preventDefault();
         const wheelState = wheelRef.current;
+        const { coast } = wheelState;
+        const magnitude = Math.abs(dx);
+        // 已经吸附：同向且没有重新加速的事件都是松手后的系统惯性，吞掉不再移动。
+        if (
+          event.timeStamp - coast.time <= WHEEL_IDLE &&
+          Math.sign(dx) === coast.sign &&
+          magnitude <= coast.last * WHEEL_REGAIN_RATIO + WHEEL_REGAIN_SLOP
+        ) {
+          coast.time = event.timeStamp;
+          coast.last = magnitude;
+          return;
+        }
+        coast.time = -Infinity;
         if (wheelTimer.current === undefined || event.timeStamp - wheelState.time > WHEEL_IDLE) {
           const current = offset.get();
           wheelState.target = track.loop ? current : clamp(current, track.min, track.max);
+          wheelState.origin = wheelState.target;
           // 手势开始时的吸附点：动画途中开始的手势以动画的目标为准。
           wheelState.startVirtual = offset.isAnimating()
             ? virtualRef.current
             : Math.round(virtualPosition(track, wheelState.target));
+          wheelState.samples = [];
           setWheeling(true);
         }
         wheelState.time = event.timeStamp;
         let next = wheelState.target + dx;
         if (!track.loop) next = clamp(next, track.min, track.max);
         wheelState.target = next;
+        const { samples } = wheelState;
+        samples.push({ t: event.timeStamp, dx });
+        if (samples.length > WHEEL_MOMENTUM_WINDOW) samples.shift();
         // 随手势更新目标吸附点：途中按下、按方向键或调用 api.next() 都从这里继续。
         virtualRef.current = wheelSnapTarget(track);
+        if (wheelConfigRef.current.snapMode !== "none" && isWheelMomentum(samples)) {
+          coast.time = event.timeStamp;
+          coast.sign = Math.sign(dx);
+          coast.last = magnitude;
+          releaseWheel(track, wheelVelocity(samples));
+          return;
+        }
         const id = ++animationRef.current.id;
         const controls = animate(offset, next, reducedRef.current ? { duration: 0 } : WHEEL_SPRING);
         animationRef.current.controls = controls;
@@ -2244,7 +2364,7 @@ export const Carousel = React.forwardRef<HTMLDivElement, CarouselProps>(
         node.removeEventListener("dragstart", onNativeDragStart);
         window.clearTimeout(wheelTimer.current);
       };
-    }, [viewportNode, offset, endWheel, wheelSnapTarget, commitIndex, settle, goToVirtual]);
+    }, [viewportNode, offset, endWheel, wheelSnapTarget, releaseWheel, commitIndex, settle, goToVirtual]);
 
     /* ---------------- 自动播放 ---------------- */
 

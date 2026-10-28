@@ -98,14 +98,16 @@ div[data-slot=masonry]  根元素（外壳）：className、style、ref 与其�
 
 ### 位置过渡
 
-每个定位层有 x、y 两个 MotionValue。每次排布后对每一项：
+每个定位层的位置是「目标位置 + 偏移」，偏移是 dx、dy 两个 MotionValue。每次排布后对每一项：
 
 | 情况 | 处理 |
 | --- | --- |
 | 第一次获得位置 | 直接设置，并触发入场 |
-| 本次排布中容器宽度变了，但列数没变（连续拖动窗口） | 直接设置，跟手不滞后 |
-| 其他位置变化（列数变化、增删、排序、筛选、同宽下的高度变化） | 弹簧过渡（约 `visualDuration 0.5, bounce 0.12`），已有动画时从当前值和速度重新出发 |
+| 本次排布中容器宽度变了，但列数没变（连续拖动窗口） | 只更新目标；仍在途中的偏移继续自己归零，项严格跟手 |
+| 其他位置变化（列数变化、增删、排序、筛选、同宽下的高度变化） | 偏移设为「屏幕上的当前位置 − 新目标」，带当前速度以弹簧（`visualDuration 0.45, bounce 0.08`）归零 |
 | `animateLayout={false}` 或减少动态效果 | 直接设置 |
+
+不直接对绝对坐标做弹簧：连续拖动宽度时目标每帧都在变，每帧把弹簧改向新目标会一直落后于目标、带着回弹来回追，整面墙抖成一团、显得拖沓。容器高度同样是「目标 + 偏移」。
 
 ### 入场与退场
 
@@ -175,7 +177,8 @@ div[data-slot=masonry]  根元素（外壳）：className、style、ref 与其�
 
 ### 入场、退场与 AnimatePresence
 
-- 入场、退场都用 Motion 的 `animate(element, …)` 作用在内容层（WAAPI 加速）：入场 opacity 0.4s、filter 0.45s 缓出，transform 用 `visualDuration 0.55, bounce 0.1` 的弹簧，同一批按 (y, x) 排序、每项错开 35ms、最多 420ms；同一次排布里已有项沿弹簧移动（筛选、插入）时整体再推迟 140ms。退场 220ms、`cubic-bezier(0.32, 0.72, 0, 1)`。动画结束后在 Motion 的 postRender 阶段清掉内联样式，不留下 `blur(0px)` 这类仍会创建合成层的值。
+- 入场、退场直接用原生 WAAPI（`element.animate`）作用在内容层，起点由 `fill` 提供，不写入内联样式：入场 `fill: backwards`（延迟期间就停在起点），结束后动画移除、元素回到自身样式，也就是终点，不留下 `blur(0px)` 这类仍会创建合成层的值；退场 `fill: forwards` 停在终点直到卸载。入场 opacity 0.4s、filter 0.45s 缓出，transform 0.6s `cubic-bezier(0.22, 1.12, 0.36, 1)`（一点点回弹），同一批按 (y, x) 排序、每项错开 35ms、最多 420ms；同一次排布里已有项沿弹簧移动（筛选、插入）时整体再推迟 140ms。退场 220ms、`cubic-bezier(0.32, 0.72, 0, 1)`。打断时先读计算样式作为下一段动画的起点，再取消上一段。
+- 最初用 Motion 的 `animate(element, …)` 并预先写入内联起点：Motion 在动画结束时先取消 WAAPI、下一帧才写入终值，中间这一帧露出内联起点（透明、缩小 4%、下移 18px），首屏加载完成与加载更多后会看到整块闪一下、抖一下；退场结束到卸载之间也会闪回原样。
 - 入场途中被删除或恢复时，Motion 把被打断的 transform 提交为 `matrix(...)`，与目标 `translateY() scale()` 结构不同，直接作为起点会被解析成 NaN 并跳过过渡。退场与恢复从计算样式还原出同结构的起点（`translateY(ty) scale(s)`）显式传入。
 - 首次排布之后挂载的项在注册时就先设为透明，等排布给出位置后再播放入场；`appear` 为 true 时服务端首帧的真实项由样式隐藏（仅在 `scripting: enabled` 时）。
 - 退场通过 `usePresence` 拿到移除回调。踩到的坑：AnimatePresence 在它自己的 layout effect（晚于子组件的 layout effect）里才登记退场的 key，如果在子组件的 layout effect 里同步调用移除回调（例如从未定位过的骨架），这次完成会被忽略，而 AnimatePresence 要等所有退场都完成才会卸载，结果后续所有退场的项都残留在 DOM 中。现在完成回调至少推迟到微任务，并且总是调用最新的一个回调。

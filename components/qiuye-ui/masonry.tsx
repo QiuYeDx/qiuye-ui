@@ -8,7 +8,6 @@ import {
   motionValue,
   useInView,
   usePresence,
-  type AnimationPlaybackControlsWithThen,
   type MotionValue,
 } from "motion/react";
 
@@ -176,14 +175,17 @@ export interface MasonryProps<T>
 // 默认骨架高度 = 列宽 × 比例，循环取值，首屏看起来像真实的瀑布流而不是整齐的格子。
 const SKELETON_RATIOS = [1.3, 0.8, 1.55, 1, 1.2, 0.72, 1.4, 0.9];
 
-// 位置过渡：接近临界阻尼的弹簧，可随时改变目标并保留速度。
+// 位置过渡：每项以「目标位置 + 偏移」定位，换位置时偏移从屏幕上的当前位置以弹簧归零。
+// 连续拖动窗口宽度时只移动目标、偏移继续自己衰减，项严格跟手，不会因每帧改目标而拖沓发抖。
 const LAYOUT_SPRING = {
   type: "spring",
-  visualDuration: 0.5,
-  bounce: 0.12,
+  visualDuration: 0.45,
+  bounce: 0.08,
 } as const;
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+// 入场上浮：带一点点回弹的缓出
+const ENTER_EASE = [0.22, 1.12, 0.36, 1] as const;
 const EXIT_EASE = [0.32, 0.72, 0, 1] as const;
 // 骨架与替代它的内容交叉淡出：对称缓动，与内容的缓出叠加后覆盖度始终接近 1
 const CROSSFADE_EASE = [0.45, 0, 0.55, 1] as const;
@@ -560,8 +562,7 @@ function syncStandaloneShimmer(element: HTMLElement) {
 
 /**
  * 内容层当前的 translateY 与 scale，作为退场 / 恢复动画的起点。
- * 打断入场时 Motion 把当前值提交为 `matrix(...)`，与目标 `translateY() scale()` 结构不同，
- * 直接作为起点会被解析成 NaN 并跳过过渡，所以从计算样式中还原成同结构的字符串。
+ * 计算样式是 `matrix(...)`，还原成与目标 `translateY() scale()` 同结构的字符串，按分量插值。
  */
 function currentTransform(element: HTMLElement) {
   const match = /matrix\(([^)]+)\)/.exec(getComputedStyle(element).transform);
@@ -570,6 +571,59 @@ function currentTransform(element: HTMLElement) {
   const scale = Math.hypot(a, b);
   if (!Number.isFinite(scale) || !Number.isFinite(f)) return ENTER_TO;
   return `translateY(${round2(f)}px) scale(${Math.round(scale * 1000) / 1000})`;
+}
+
+/** 打断内容层上进行中的动画前读取它此刻的样子，作为下一段动画的起点 */
+function currentContentStyle(element: HTMLElement): Keyframe {
+  const style = getComputedStyle(element);
+  return {
+    opacity: style.opacity,
+    transform: currentTransform(element),
+    filter: style.filter === "none" ? "blur(0px)" : style.filter,
+  };
+}
+
+const bezier = (ease: readonly number[]) => `cubic-bezier(${ease.join(", ")})`;
+
+/** 内容层上的一组原生动画 */
+interface ContentAnimation {
+  stop: () => void;
+  then: (onFinish: () => void) => void;
+}
+
+/**
+ * 入场与退场直接用 WAAPI 播放，起点由 fill 提供，不写入内联样式：
+ * 入场结束时动画移除、元素回到自身样式（就是终点），中间不会有一帧露出起点；
+ * 退场以 fill: forwards 停在终点直到卸载。
+ * Motion 的元素动画在结束时先取消 WAAPI、下一帧才写入终值，这一帧露出的内联起点
+ * （透明、缩小、下移）就是加载完成或加载更多后整块闪一下、抖一下的来源。
+ */
+function playContent(
+  element: HTMLElement,
+  tracks: ReadonlyArray<readonly [Keyframe[], KeyframeAnimationOptions]>,
+): ContentAnimation {
+  if (typeof element.animate !== "function") {
+    return { stop: () => {}, then: (onFinish) => queueMicrotask(onFinish) };
+  }
+  const animations = tracks.map(([keyframes, options]) =>
+    element.animate(keyframes, options),
+  );
+  return {
+    stop: () => animations.forEach((animation) => animation.cancel()),
+    then: (onFinish) => {
+      Promise.all(animations.map((animation) => animation.finished)).then(
+        onFinish,
+        () => {},
+      );
+    },
+  };
+}
+
+/** 从屏幕上的当前偏移与速度出发，以弹簧归零 */
+function springOffset(value: MotionValue<number>, offset: number) {
+  const velocity = value.getVelocity();
+  value.jump(offset);
+  if (offset !== 0) animate(value, 0, { ...LAYOUT_SPRING, velocity });
 }
 
 const TABBABLE = [
@@ -675,8 +729,9 @@ interface CellRecord {
   skeleton: boolean;
   /** 是否在首次排布前就已挂载（受 appear 控制） */
   bornInitial: boolean;
-  x: MotionValue<number>;
-  y: MotionValue<number>;
+  /** 相对目标位置的偏移，换位置时以弹簧归零 */
+  dx: MotionValue<number>;
+  dy: MotionValue<number>;
   placed: boolean;
   targetX: number;
   targetY: number;
@@ -688,7 +743,7 @@ interface CellRecord {
   waveSignature: string;
   exiting: boolean;
   token: number;
-  animation: AnimationPlaybackControlsWithThen | null;
+  animation: ContentAnimation | null;
   /** AnimatePresence 的移除回调（退场结束时调用） */
   onExited: (() => void) | null;
   write: () => void;
@@ -720,7 +775,8 @@ class MasonryEngine {
   private hasLaidOut = false;
   private resizing = false;
   private resizeFrame = 0;
-  private height = motionValue(0);
+  /** 容器高度同样是「目标 + 偏移」 */
+  private heightOffset = motionValue(0);
   private heightTarget = -1;
   private heightWritten = "";
   private unsubscribeHeight: (() => void) | null = null;
@@ -739,7 +795,7 @@ class MasonryEngine {
       this.listObserver = new ResizeObserver(this.handleListResize);
       this.listObserver.observe(list);
     }
-    this.unsubscribeHeight = this.height.on("change", () =>
+    this.unsubscribeHeight = this.heightOffset.on("change", () =>
       frame.render(this.writeHeight),
     );
   }
@@ -751,7 +807,7 @@ class MasonryEngine {
     this.listObserver = null;
     this.unsubscribeHeight?.();
     this.unsubscribeHeight = null;
-    this.height.stop();
+    this.heightOffset.stop();
     cancelAnimationFrame(this.resizeFrame);
     this.resizeFrame = 0;
     this.resizing = false;
@@ -771,8 +827,8 @@ class MasonryEngine {
       content,
       skeleton,
       bornInitial: !this.hasLaidOut,
-      x: motionValue(0),
-      y: motionValue(0),
+      dx: motionValue(0),
+      dy: motionValue(0),
       placed: false,
       targetX: 0,
       targetY: 0,
@@ -785,7 +841,9 @@ class MasonryEngine {
       animation: null,
       onExited: null,
       write: () => {
-        const value = `translate3d(${round2(record.x.get())}px, ${round2(record.y.get())}px, 0)`;
+        const x = round2(record.targetX + record.dx.get());
+        const y = round2(record.targetY + record.dy.get());
+        const value = `translate3d(${x}px, ${y}px, 0)`;
         if (value === record.transform) return;
         record.transform = value;
         layer.style.transform = value;
@@ -793,8 +851,8 @@ class MasonryEngine {
       unsubscribe: () => {},
     };
     const schedule = () => frame.render(record.write);
-    const offX = record.x.on("change", schedule);
-    const offY = record.y.on("change", schedule);
+    const offX = record.dx.on("change", schedule);
+    const offY = record.dy.on("change", schedule);
     record.unsubscribe = () => {
       offX();
       offY();
@@ -821,8 +879,8 @@ class MasonryEngine {
   private dispose(record: CellRecord) {
     record.animation?.stop();
     record.unsubscribe();
-    record.x.destroy();
-    record.y.destroy();
+    record.dx.destroy();
+    record.dy.destroy();
     this.focusRescue.delete(record);
     this.itemObserver?.unobserve(record.layer);
     this.byLayer.delete(record.layer);
@@ -850,8 +908,8 @@ class MasonryEngine {
     // 再设 inert（对含焦点的祖先设 inert 会让焦点直接落到 body）。
     if (layer.contains(document.activeElement)) this.focusRescue.add(record);
     else layer.setAttribute("inert", "");
-    record.animation?.stop();
     if (!record.placed) {
+      record.animation?.stop();
       queueMicrotask(() => this.finishExit(record, token));
       return;
     }
@@ -861,18 +919,21 @@ class MasonryEngine {
       queueMicrotask(() => this.flushSkeletonExits([]));
       return;
     }
+    // 入场途中被删除：从此刻的样子出发
+    const from = currentContentStyle(content);
+    record.animation?.stop();
+    const timing = {
+      duration: 220,
+      easing: bezier(EXIT_EASE),
+      fill: "forwards",
+    } as const;
     const animation = prefersReducedMotion()
-      ? animate(content, { opacity: 0 }, { duration: 0.2, ease: EXIT_EASE })
-      : animate(
-          content,
-          {
-            opacity: 0,
-            // 入场途中被删除时，内联值是 Motion 提交的矩阵，显式给出同结构的起点
-            transform: [currentTransform(content), EXIT_TO],
-            filter: "blur(4px)",
-          },
-          { duration: 0.22, ease: EXIT_EASE },
-        );
+      ? playContent(content, [
+          [[{ opacity: from.opacity }, { opacity: 0 }], { ...timing, duration: 200 }],
+        ])
+      : playContent(content, [
+          [[from, { opacity: 0, transform: EXIT_TO, filter: "blur(4px)" }], timing],
+        ]);
     record.animation = animation;
     animation.then(() => this.finishExit(record, token));
   }
@@ -887,25 +948,19 @@ class MasonryEngine {
     if (!record || !record.exiting) return;
     record.exiting = false;
     record.onExited = null;
-    const token = ++record.token;
+    record.token += 1;
     const { layer, content } = record;
     this.focusRescue.delete(record);
     layer.style.pointerEvents = "";
     layer.removeAttribute("inert");
+    const from = currentContentStyle(content);
     record.animation?.stop();
-    const animation = animate(
-      content,
-      {
-        opacity: 1,
-        transform: [currentTransform(content), ENTER_TO],
-        filter: "blur(0px)",
-      },
-      { duration: 0.3, ease: EASE_OUT },
-    );
-    record.animation = animation;
-    animation.then(() => {
-      clearContentStyle(record, token);
-    });
+    record.animation = playContent(content, [
+      [
+        [from, { opacity: 1, transform: ENTER_TO, filter: "blur(0px)" }],
+        { duration: 300, easing: bezier(EASE_OUT), fill: "backwards" },
+      ],
+    ]);
   }
 
   /**
@@ -935,13 +990,22 @@ class MasonryEngine {
         }
       }
       const token = record.token;
-      const animation = animate(
-        record.content,
-        { opacity: 0 },
-        delay >= 0
-          ? { duration: 0.3, delay: delay / 1000 + 0.05, ease: CROSSFADE_EASE }
-          : { duration: 0.2, ease: EXIT_EASE },
-      );
+      // 骨架可能还在淡入：从此刻的透明度出发，等待期间停在原处（fill: both）
+      const from = getComputedStyle(record.content).opacity;
+      record.animation?.stop();
+      const animation = playContent(record.content, [
+        [
+          [{ opacity: from }, { opacity: 0 }],
+          delay >= 0
+            ? {
+                duration: 300,
+                delay: delay + 50,
+                easing: bezier(CROSSFADE_EASE),
+                fill: "both",
+              }
+            : { duration: 200, easing: bezier(EXIT_EASE), fill: "forwards" },
+        ],
+      ]);
       record.animation = animation;
       animation.then(() => this.finishExit(record, token));
     }
@@ -1107,8 +1171,8 @@ class MasonryEngine {
         record.placed = true;
         record.targetX = x;
         record.targetY = y;
-        record.x.jump(x);
-        record.y.jump(y);
+        record.dx.jump(0);
+        record.dy.jump(0);
         record.write();
         record.layer.setAttribute("data-placed", "");
         placedNow.push(record);
@@ -1146,19 +1210,19 @@ class MasonryEngine {
       .filter((record) => record.skeleton)
       .forEach((record) => this.enter(record, 0, reduced));
 
-    // 7. 容器高度与加载哨兵：高度与各项用同一个弹簧，跟手拖动时若仍在弹簧途中则改为追向新目标
+    // 7. 容器高度与加载哨兵：高度与各项用同一个弹簧，跟手拖动时同样只移动目标
     const height = Math.ceil(result.height);
-    if (
-      this.heightTarget < 0 ||
-      instant ||
-      (follow && !this.height.isAnimating())
-    ) {
-      this.height.jump(height);
-      this.writeHeight();
-    } else if (height !== this.heightTarget) {
-      animate(this.height, height, LAYOUT_SPRING);
-    }
+    const previousHeight = this.heightTarget;
     this.heightTarget = height;
+    if (previousHeight < 0 || instant) {
+      this.heightOffset.jump(0);
+    } else if (height !== previousHeight && !follow) {
+      springOffset(
+        this.heightOffset,
+        previousHeight + this.heightOffset.get() - height,
+      );
+    }
+    this.writeHeight();
 
     const sentinel = this.sentinel;
     if (sentinel) {
@@ -1180,69 +1244,77 @@ class MasonryEngine {
     instant: boolean,
     follow: boolean,
   ) {
-    const changedX = x !== record.targetX;
-    const changedY = y !== record.targetY;
+    // 屏幕上的当前位置
+    const fromX = record.targetX + record.dx.get();
+    const fromY = record.targetY + record.dy.get();
     record.targetX = x;
     record.targetY = y;
-    const animating = record.x.isAnimating() || record.y.isAnimating();
-    const near =
-      Math.abs(record.x.get() - x) < 1 && Math.abs(record.y.get() - y) < 1;
-    if (instant || (!animating && (follow || near))) {
-      record.x.jump(x);
-      record.y.jump(y);
+    if (instant) {
+      record.dx.jump(0);
+      record.dy.jump(0);
       record.write();
       return false;
     }
-    // 从当前值与当前速度出发，可随时改变目标
-    if (changedX) animate(record.x, x, LAYOUT_SPRING);
-    if (changedY) animate(record.y, y, LAYOUT_SPRING);
+    // 连续拖动宽度（列数未变）：只移动目标，仍在途中的偏移继续自己衰减
+    if (follow) {
+      record.write();
+      return false;
+    }
+    const animating = record.dx.isAnimating() || record.dy.isAnimating();
+    const offsetX = fromX - x;
+    const offsetY = fromY - y;
+    if (!animating && Math.abs(offsetX) < 1 && Math.abs(offsetY) < 1) {
+      record.dx.jump(0);
+      record.dy.jump(0);
+      record.write();
+      return false;
+    }
+    springOffset(record.dx, offsetX);
+    springOffset(record.dy, offsetY);
     return true;
   }
 
   private enter(record: CellRecord, delay: number, reduced: boolean) {
     const element = record.content;
-    const token = ++record.token;
+    record.token += 1;
     record.animation?.stop();
-    let animation: AnimationPlaybackControlsWithThen;
-    if (record.skeleton || reduced) {
-      element.style.opacity = "0";
-      animation = animate(
-        element,
-        { opacity: [0, 1] },
-        { duration: record.skeleton ? 0.3 : 0.2, ease: EASE_OUT },
-      );
-    } else {
-      const seconds = delay / 1000;
-      element.style.opacity = "0";
-      element.style.transform = ENTER_FROM;
-      element.style.filter = "blur(6px)";
-      animation = animate(
-        element,
-        {
-          opacity: [0, 1],
-          transform: [ENTER_FROM, ENTER_TO],
-          filter: ["blur(6px)", "blur(0px)"],
-        },
-        {
-          opacity: { duration: 0.4, ease: EASE_OUT, delay: seconds },
-          filter: { duration: 0.45, ease: EASE_OUT, delay: seconds },
-          transform: {
-            type: "spring",
-            visualDuration: 0.55,
-            bounce: 0.1,
-            delay: seconds,
-          },
-        },
-      );
-    }
-    record.animation = animation;
-    animation.then(() => clearContentStyle(record, token));
+    // fill: backwards 在延迟期间就提供起点；结束后元素回到自身样式，不留内联值
+    const easing = bezier(EASE_OUT);
+    record.animation =
+      record.skeleton || reduced
+        ? playContent(element, [
+            [
+              [{ opacity: 0 }, { opacity: 1 }],
+              { duration: record.skeleton ? 300 : 200, easing, fill: "backwards" },
+            ],
+          ])
+        : playContent(element, [
+            [
+              [{ opacity: 0 }, { opacity: 1 }],
+              { duration: 400, delay, easing, fill: "backwards" },
+            ],
+            [
+              [{ filter: "blur(6px)" }, { filter: "blur(0px)" }],
+              { duration: 450, delay, easing, fill: "backwards" },
+            ],
+            [
+              [{ transform: ENTER_FROM }, { transform: ENTER_TO }],
+              {
+                duration: 600,
+                delay,
+                easing: bezier(ENTER_EASE),
+                fill: "backwards",
+              },
+            ],
+          ]);
+    // register() 为等待排布的项写入的 opacity: 0 交给 fill 接管（同一任务内，不会露出一帧）
+    element.style.opacity = "";
   }
 
   private writeHeight = () => {
     const list = this.list;
     if (!list) return;
-    const value = `${Math.max(0, round2(this.height.get()))}px`;
+    const value = `${Math.max(0, round2(this.heightTarget + this.heightOffset.get()))}px`;
     if (value === this.heightWritten) return;
     this.heightWritten = value;
     list.style.height = value;
@@ -1284,20 +1356,6 @@ class MasonryEngine {
     }
     if (changed) this.layout();
   };
-}
-
-/**
- * 入场结束后清掉内容层的内联样式（不留下 blur(0px) 这类仍会创建合成层的值）。
- * Motion 在动画结束的下一帧 render 阶段写入终值，所以放在 postRender 中进行。
- */
-function clearContentStyle(record: CellRecord, token: number) {
-  frame.postRender(() => {
-    if (record.token !== token || record.exiting) return;
-    const style = record.content.style;
-    style.opacity = "";
-    style.transform = "";
-    style.filter = "";
-  });
 }
 
 /* ------------------------------------------------------------------ */

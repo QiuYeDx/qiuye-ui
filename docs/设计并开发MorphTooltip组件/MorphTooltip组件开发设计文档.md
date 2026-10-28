@@ -135,7 +135,7 @@ div[role=tooltip]  position: fixed; left/top 0; transform = translate(x, y)（Mo
 5. **内容变化**：「复制」→「已复制 ✓」原地形变（`closeOnClick={false}`）。
 6. **范围**：两个相邻的 Provider（各自独立）与没有 Provider 的独立提示对比。
 7. **参数调试**：delay、skipDelayDuration、closeDelay、morph、side、align、sideOffset、arrow、variant、maxWidth，实时生效并生成代码。
-8. **首页 / 快速预览**：一条 Dock 风格的图标栏，悬停时气泡在图标间滑动。
+8. **首页 / 快速预览**：一条 Dock 风格的图标栏，悬停时气泡在图标间滑动。图标悬停上浮只作用在按钮内的图标层，按钮（悬停区域与气泡锚点）不动：移动触发元素会带着气泡一起上下位移，指针停在图标底边时还会在悬停与离开之间反复抖动。
 
 ## 验收
 
