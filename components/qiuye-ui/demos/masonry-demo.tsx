@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useInView, useReducedMotion } from "motion/react";
 import {
   HeartIcon,
@@ -1474,19 +1481,19 @@ const NOTES: Note[] = [
     id: "n1",
     title: "按容器宽度计算列数",
     tag: "排布",
-    body: "列数由容器宽度决定而不是视口，所以把瀑布流放进侧栏、对话框或分栏里同样正确。列宽 = (容器宽 − 间距 × (列数 − 1)) / 列数。",
+    body: "列数由容器宽度决定而不是视口，所以把瀑布流放进侧栏、对话框或分栏里同样正确。列宽 = (容器宽 − 间距 × (列数 − 1)) / 列数。断点的键同样是容器宽度，手机上也可以保持两列。",
   },
   {
     id: "n2",
     title: "首帧没有闪烁",
     tag: "渲染",
-    body: "新挂载的项在 useLayoutEffect 中同步测量高度并定位，首帧绘制前就已经在正确的位置。服务端渲染时先用 CSS 多列近似排布。",
+    body: "新挂载的项在 useLayoutEffect 中同步测量高度并定位，首帧绘制前就已经在正确的位置。服务端渲染时先用 CSS 多列近似排布，水合后再切换到精确定位。",
   },
   {
     id: "n3",
     title: "共享一个 ResizeObserver",
     tag: "性能",
-    body: "所有项共用一个 ResizeObserver，读取 borderBoxSize，不受入场动画 transform 的影响。同一个回调里的多项变化只排布一次。",
+    body: "所有项共用一个 ResizeObserver，读取 borderBoxSize，不受入场动画 transform 的影响。同一个回调里的多项变化只排布一次，滚动加载大量内容时也不会为每一项各自创建观察者。",
   },
   {
     id: "n4",
@@ -1510,22 +1517,84 @@ const NOTES: Note[] = [
     id: "n7",
     title: "减少动态效果",
     tag: "无障碍",
-    body: "系统开启减少动态效果时，位置直接到位，入场与退场只做约 200ms 的淡入淡出，骨架只保留静态底色。",
+    body: "系统开启减少动态效果时，位置直接到位，入场与退场只做约 200ms 的淡入淡出，骨架只保留静态底色。这里的卡片展开也会直接到位，不做高度过渡。",
   },
   {
     id: "n8",
     title: "稳定列",
     tag: "排布",
-    body: "每一项所在的列会被缓存。展开这张卡片试试：只有同一列下方的卡片向下让位，其他列纹丝不动。",
+    body: "每一项所在的列会被缓存，图片加载、内容展开带来的高度变化都不会让它换列。展开这张卡片试试：只有同一列下方的卡片跟着向下让位，其他列纹丝不动，收起后再原样复位。",
   },
 ];
 
 // 断点的键是容器宽度（px），手机上也保持两列
 const NOTE_COLUMNS = { 0: 2, 600: 3, 900: 4 };
 
+const NOTE_CLAMP_LINES = 3;
+const NOTE_EXPAND_DURATION = 320;
+const NOTE_EXPAND_EASE = "cubic-bezier(0.23, 1, 0.32, 1)";
+
 function NoteCard({ note }: { note: Note }) {
+  const reducedMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
-  const long = note.body.length > 64;
+  // 收起时先过渡高度，到位后再加回截断，避免文字先消失、卡片再缩
+  const [clamped, setClamped] = useState(true);
+  const [clampable, setClampable] = useState(false);
+  const bodyRef = useRef<HTMLParagraphElement>(null);
+  const animationRef = useRef<Animation | null>(null);
+  const fromHeightRef = useRef<number | null>(null);
+
+  // 按实际排版判断是否会被截断：列宽随容器变化，按字数判断会出现点了展开却毫无变化的卡片
+  useLayoutEffect(() => {
+    const body = bodyRef.current;
+    if (!body) return;
+    const measure = () => {
+      const lineHeight = parseFloat(getComputedStyle(body).lineHeight);
+      setClampable(body.scrollHeight > lineHeight * NOTE_CLAMP_LINES + 1);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(body);
+    return () => observer.disconnect();
+  }, []);
+
+  useLayoutEffect(() => {
+    const body = bodyRef.current;
+    const from = fromHeightRef.current;
+    fromHeightRef.current = null;
+    if (!body || from == null) {
+      if (!expanded) setClamped(true);
+      return;
+    }
+    // 从当前（可能正在过渡的）高度重新出发，可以随时反向
+    animationRef.current?.cancel();
+    const lineHeight = parseFloat(getComputedStyle(body).lineHeight);
+    const to = expanded ? body.scrollHeight : lineHeight * NOTE_CLAMP_LINES;
+    body.style.overflow = "hidden";
+    const animation = body.animate(
+      { height: [`${from}px`, `${to}px`] },
+      { duration: NOTE_EXPAND_DURATION, easing: NOTE_EXPAND_EASE },
+    );
+    animationRef.current = animation;
+    animation.onfinish = () => {
+      animationRef.current = null;
+      body.style.overflow = "";
+      if (!expanded) setClamped(true);
+    };
+  }, [expanded]);
+
+  useEffect(() => () => animationRef.current?.cancel(), []);
+
+  const toggle = () => {
+    const body = bodyRef.current;
+    if (body && !reducedMotion) {
+      // 取布局高度而不是 getBoundingClientRect：后者会算上入场动画的 scale
+      fromHeightRef.current = parseFloat(getComputedStyle(body).height);
+    }
+    if (!expanded) setClamped(false);
+    setExpanded(!expanded);
+  };
+
   return (
     <article className="rounded-xl border bg-card p-4">
       <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] text-foreground/75">
@@ -1533,18 +1602,19 @@ function NoteCard({ note }: { note: Note }) {
       </span>
       <h4 className="mt-2.5 text-sm font-semibold">{note.title}</h4>
       <p
+        ref={bodyRef}
         className={cn(
           "mt-1.5 text-xs leading-5 text-muted-foreground",
-          long && !expanded && "line-clamp-3",
+          clamped && "line-clamp-3",
         )}
       >
         {note.body}
       </p>
-      {long ? (
+      {clampable || expanded ? (
         <button
           type="button"
           aria-expanded={expanded}
-          onClick={() => setExpanded((value) => !value)}
+          onClick={toggle}
           className="mt-2 text-xs font-medium text-foreground/80 underline-offset-4 hover:underline"
         >
           {expanded ? "收起" : "展开全文"}
