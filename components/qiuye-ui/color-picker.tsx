@@ -277,6 +277,66 @@ const CHECKERBOARD_STYLE: React.CSSProperties = {
 };
 
 /* ────────────────────────────────────────────────────────────── */
+/*  圆角与间距                                                     */
+/* ────────────────────────────────────────────────────────────── */
+
+// 圆角从最内层往外推：贴边的内层元素（SV 面板、输入框、预览、色块）共用 INNER_RADIUS，
+// 它也是滑条的半高；容器圆角 = 内层圆角 + 内边距，四个角上内外轮廓的间距处处相等。
+// 下面的 rounded-[7px] / rounded-[17px] 是关闭平滑圆角时的回退值，需与常量保持一致。
+const PANEL_INSET = 10;
+const INNER_RADIUS = 7;
+const SURFACE_RADIUS = INNER_RADIUS + PANEL_INSET;
+const SLIDER_HEIGHT = INNER_RADIUS * 2;
+
+/** 颜色表面的细描边：浅色与白色也能和背景区分开 */
+const HAIRLINE =
+  "inset-ring inset-ring-black/10 dark:inset-ring-white/15";
+
+/** 叠在父元素最上层的描边，继承父元素的圆角与 corner-shape，不被子元素遮住 */
+function HairlineOverlay() {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "pointer-events-none absolute inset-0 rounded-[inherit] [corner-shape:inherit]",
+        HAIRLINE,
+      )}
+    />
+  );
+}
+
+/** 颜色填充：开启透明度时在棋盘格上叠加半透明色 */
+function ColorFill({
+  color,
+  alpha,
+  showAlpha,
+}: {
+  color: string;
+  alpha: number;
+  showAlpha: boolean;
+}) {
+  return (
+    <>
+      {showAlpha && (
+        <span
+          aria-hidden
+          className="absolute inset-0"
+          style={CHECKERBOARD_STYLE}
+        />
+      )}
+      <span
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          backgroundColor: showAlpha ? hexToRgbaString(color, alpha) : color,
+        }}
+      />
+      <HairlineOverlay />
+    </>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────── */
 /*  内部子组件：SV 面板                                             */
 /* ────────────────────────────────────────────────────────────── */
 
@@ -346,18 +406,17 @@ function SvPanel({
   return (
     <SmoothCorners
       asChild
-      radius={8}
+      radius={INNER_RADIUS}
       smoothing={smoothCornerSmoothing}
       disabled={!smoothCorners}
     >
       <div
         ref={ref}
-        className="relative cursor-crosshair rounded-md border border-border overflow-hidden touch-none"
+        className="relative cursor-crosshair overflow-hidden rounded-[7px] touch-none"
         style={{
           width,
           height,
           backgroundImage: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, ${hueColor})`,
-          backgroundClip: "padding-box",
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -365,6 +424,7 @@ function SvPanel({
         onPointerCancel={handlePointerEnd}
         onLostPointerCapture={handlePointerEnd}
       >
+        <HairlineOverlay />
         <div
           className="absolute size-3.5 rounded-full border-2 border-white pointer-events-none -translate-x-1/2 -translate-y-1/2"
           style={{
@@ -380,27 +440,37 @@ function SvPanel({
 }
 
 /* ────────────────────────────────────────────────────────────── */
-/*  内部子组件：色相条                                               */
+/*  内部子组件：色相 / 透明度滑条                                     */
 /* ────────────────────────────────────────────────────────────── */
 
-interface HueSliderProps {
-  hue: number;
+interface ChannelSliderProps {
+  /** 当前位置，0..1 */
+  value: number;
   width: number;
-  onChange: (h: number) => void;
+  trackStyle: React.CSSProperties;
+  checkerboard?: boolean;
+  onChange: (fraction: number) => void;
 }
 
-function HueSlider({ hue, width, onChange }: HueSliderProps) {
+function ChannelSlider({
+  value,
+  width,
+  trackStyle,
+  checkerboard = false,
+  onChange,
+}: ChannelSliderProps) {
   const ref = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
 
+  // 滑块与滑条等高，圆心在两端各内缩半个滑条高度，到头时与胶囊端部同心
   const update = useCallback(
     (clientX: number) => {
       const el = ref.current;
       if (!el) return;
-      const rect = getPaintRect(el);
-      if (!rect) return;
-      const x = clamp(clientX - rect.left, 0, rect.width);
-      onChange(clampHue((x / rect.width) * 360));
+      const rect = el.getBoundingClientRect();
+      const travel = rect.width - SLIDER_HEIGHT;
+      if (travel <= 0) return;
+      onChange(clamp((clientX - rect.left - SLIDER_HEIGHT / 2) / travel, 0, 1));
     },
     [onChange],
   );
@@ -430,125 +500,40 @@ function HueSlider({ hue, width, onChange }: HueSliderProps) {
     }
   }, []);
 
-  const handleHue = clampHue(hue);
-
   return (
     <div
       ref={ref}
-      className="relative cursor-pointer rounded-md border border-border overflow-hidden touch-none"
-      style={{
-        width,
-        height: 14,
-        backgroundImage:
-          "linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)",
-        backgroundClip: "padding-box",
-      }}
+      className="relative cursor-pointer touch-none"
+      style={{ width, height: SLIDER_HEIGHT }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerEnd}
       onPointerCancel={handlePointerEnd}
       onLostPointerCapture={handlePointerEnd}
     >
+      <div className="absolute inset-0 overflow-hidden rounded-full">
+        {checkerboard && (
+          <div className="absolute inset-0" style={CHECKERBOARD_STYLE} />
+        )}
+        <div className="absolute inset-0" style={trackStyle} />
+        <HairlineOverlay />
+      </div>
       <div
-        className="absolute top-0 h-full w-1 rounded-sm border border-white/80 pointer-events-none -translate-x-1/2"
+        className="pointer-events-none absolute top-0 rounded-full border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.2),0_1px_3px_rgb(0_0_0/0.3)]"
         style={{
-          left: `${(handleHue / 360) * 100}%`,
-          boxShadow: "0 0 2px rgba(0,0,0,.4)",
+          left: `calc(${clamp(value, 0, 1)} * (100% - ${SLIDER_HEIGHT}px))`,
+          width: SLIDER_HEIGHT,
+          height: SLIDER_HEIGHT,
         }}
       />
     </div>
   );
 }
 
-/* ────────────────────────────────────────────────────────────── */
-/*  内部子组件：透明度条                                              */
-/* ────────────────────────────────────────────────────────────── */
-
-interface AlphaSliderProps {
-  alpha: number;
-  solidColor: string;
-  width: number;
-  onChange: (alpha: number) => void;
-}
-
-function AlphaSlider({
-  alpha,
-  solidColor,
-  width,
-  onChange,
-}: AlphaSliderProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
-
-  const update = useCallback(
-    (clientX: number) => {
-      const el = ref.current;
-      if (!el) return;
-      const rect = getPaintRect(el);
-      if (!rect) return;
-      const x = clamp(clientX - rect.left, 0, rect.width);
-      onChange(clampAlpha((x / rect.width) * 100));
-    },
-    [onChange],
-  );
-
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      e.preventDefault();
-      dragging.current = true;
-      e.currentTarget.setPointerCapture(e.pointerId);
-      update(e.clientX);
-    },
-    [update],
-  );
-
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!dragging.current) return;
-      update(e.clientX);
-    },
-    [update],
-  );
-
-  const handlePointerEnd = useCallback((e: React.PointerEvent) => {
-    dragging.current = false;
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-  }, []);
-
-  const handleAlpha = clamp(alpha, 0, 100);
-
-  return (
-    <div
-      className="relative cursor-pointer rounded-md overflow-hidden touch-none"
-      style={{ width, height: 14 }}
-    >
-      <div className="absolute inset-0 rounded-md" style={CHECKERBOARD_STYLE} />
-      <div
-        ref={ref}
-        className="absolute inset-0 rounded-md border border-border"
-        style={{
-          backgroundImage: `linear-gradient(to right, transparent, ${solidColor})`,
-          backgroundClip: "padding-box",
-        }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerEnd}
-        onPointerCancel={handlePointerEnd}
-        onLostPointerCapture={handlePointerEnd}
-      >
-        <div
-          className="absolute top-0 h-full w-1 rounded-sm border border-white/80 pointer-events-none -translate-x-1/2"
-          style={{
-            left: `${handleAlpha}%`,
-            boxShadow: "0 0 2px rgba(0,0,0,.4)",
-          }}
-        />
-      </div>
-    </div>
-  );
-}
+const HUE_TRACK_STYLE: React.CSSProperties = {
+  backgroundImage:
+    "linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)",
+};
 
 /* ────────────────────────────────────────────────────────────── */
 /*  色块按钮                                                       */
@@ -557,51 +542,32 @@ function AlphaSlider({
 interface SwatchProps {
   color: string;
   active?: boolean;
-  size?: "sm" | "md";
   onClick?: () => void;
   smoothCorners: boolean;
   smoothCornerSmoothing: number;
 }
 
-const SWATCH_STYLES = {
-  sm: { size: "size-5", radius: 4, rounded: "rounded-[4px]" },
-  md: { size: "size-7", radius: 6, rounded: "rounded-[6px]" },
-} as const;
-
 function Swatch({
   color,
   active,
-  size = "md",
   onClick,
   smoothCorners,
   smoothCornerSmoothing,
 }: SwatchProps) {
-  const swatchStyle = SWATCH_STYLES[size];
-  const swatchSmoothing = clamp(smoothCornerSmoothing * 0.65, 0, 0.5);
-  const isLight = useMemo(() => {
-    const rgb = hexToRgb(color);
-    if (!rgb) return false;
-    return rgb.r * 0.299 + rgb.g * 0.587 + rgb.b * 0.114 > 186;
-  }, [color]);
-
+  // 色块撑满所在网格列，最后一列的右边缘与面板内容边缘对齐
   return (
     <SmoothCorners
       asChild
-      radius={swatchStyle.radius}
-      smoothing={swatchSmoothing}
+      radius={INNER_RADIUS}
+      smoothing={smoothCornerSmoothing}
       disabled={!smoothCorners}
     >
       <button
         type="button"
         className={cn(
-          swatchStyle.size,
-          swatchStyle.rounded,
-          "cursor-pointer border transition-[transform,box-shadow,border-color] duration-150 hover:scale-105 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1",
-          active
-            ? "border-ring ring-1 ring-ring/35 ring-offset-1 ring-offset-background"
-            : isLight
-              ? "border-border"
-              : "border-transparent",
+          "aspect-square w-full cursor-pointer rounded-[7px] transition-[scale,box-shadow] duration-150 ease-out hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-popover motion-reduce:transition-none motion-reduce:hover:scale-100",
+          HAIRLINE,
+          active && "ring-2 ring-foreground/70 ring-offset-2 ring-offset-popover",
         )}
         style={{ backgroundColor: color }}
         onClick={onClick}
@@ -703,6 +669,24 @@ function ColorPickerPanel({
     [hsv, onHsvChange],
   );
 
+  const swatchGroup = (title: string, colors: string[]) => (
+    <div className="space-y-1.5">
+      <p className="text-[11px] font-medium text-muted-foreground">{title}</p>
+      <div className="grid grid-cols-8 gap-1.5">
+        {colors.map((c) => (
+          <Swatch
+            key={c}
+            color={c}
+            active={color.toUpperCase() === c.toUpperCase()}
+            onClick={() => onColorSelect(c)}
+            smoothCorners={smoothCorners}
+            smoothCornerSmoothing={smoothCornerSmoothing}
+          />
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-3" style={{ width: panelWidth }}>
       {/* SV 面板 + 色相条 + 透明度条 */}
@@ -715,13 +699,21 @@ function ColorPickerPanel({
           smoothCorners={smoothCorners}
           smoothCornerSmoothing={smoothCornerSmoothing}
         />
-        <HueSlider hue={hsv.h} width={panelWidth} onChange={handleHueChange} />
+        <ChannelSlider
+          value={clampHue(hsv.h) / 360}
+          width={panelWidth}
+          trackStyle={HUE_TRACK_STYLE}
+          onChange={(fraction) => handleHueChange(clampHue(fraction * 360))}
+        />
         {showAlpha && (
-          <AlphaSlider
-            alpha={alpha}
-            solidColor={hsvToHex(hsv.h, hsv.s, hsv.v)}
+          <ChannelSlider
+            value={clamp(alpha, 0, 100) / 100}
             width={panelWidth}
-            onChange={onAlphaChange}
+            trackStyle={{
+              backgroundImage: `linear-gradient(to right, transparent, ${hsvToHex(hsv.h, hsv.s, hsv.v)})`,
+            }}
+            checkerboard
+            onChange={(fraction) => onAlphaChange(clampAlpha(fraction * 100))}
           />
         )}
       </div>
@@ -731,52 +723,49 @@ function ColorPickerPanel({
         <div className="flex items-center gap-2">
           <SmoothCorners
             asChild
-            radius={8}
+            radius={INNER_RADIUS}
             smoothing={smoothCornerSmoothing}
             disabled={!smoothCorners}
           >
-            <div
-              className={cn(
-                "size-8 shrink-0 rounded-md border border-border",
-                showAlpha && "relative overflow-hidden",
-              )}
-              style={showAlpha ? undefined : { backgroundColor: color }}
-            >
-              {showAlpha && (
-                <>
-                  <div
-                    className="absolute inset-0"
-                    style={CHECKERBOARD_STYLE}
-                  />
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      backgroundColor: hexToRgbaString(color, alpha),
-                    }}
-                  />
-                </>
-              )}
+            <div className="relative size-8 shrink-0 overflow-hidden rounded-[7px]">
+              <ColorFill color={color} alpha={alpha} showAlpha={showAlpha} />
             </div>
           </SmoothCorners>
-          <Input
-            value={hexInput}
-            onChange={(e) => setHexInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && applyHex(hexInput)}
-            onBlur={() => applyHex(hexInput)}
-            placeholder="#000000"
-            maxLength={7}
-            className="h-8 font-mono text-xs"
-          />
+          <SmoothCorners
+            asChild
+            radius={INNER_RADIUS}
+            smoothing={smoothCornerSmoothing}
+            disabled={!smoothCorners}
+          >
+            <Input
+              value={hexInput}
+              onChange={(e) => setHexInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && applyHex(hexInput)}
+              onBlur={() => applyHex(hexInput)}
+              placeholder="#000000"
+              maxLength={7}
+              spellCheck={false}
+              className="h-8 rounded-[7px] font-mono text-xs uppercase"
+            />
+          </SmoothCorners>
           {showAlpha && (
-            <div className="flex items-center gap-0.5 shrink-0">
-              <Input
-                value={alphaInput}
-                onChange={(e) => setAlphaInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && applyAlpha(alphaInput)}
-                onBlur={() => applyAlpha(alphaInput)}
-                className="h-8 w-12 font-mono text-xs text-center px-1"
-              />
-              <span className="text-xs text-muted-foreground select-none">
+            <div className="relative w-14 shrink-0">
+              <SmoothCorners
+                asChild
+                radius={INNER_RADIUS}
+                smoothing={smoothCornerSmoothing}
+                disabled={!smoothCorners}
+              >
+                <Input
+                  value={alphaInput}
+                  onChange={(e) => setAlphaInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && applyAlpha(alphaInput)}
+                  onBlur={() => applyAlpha(alphaInput)}
+                  inputMode="numeric"
+                  className="h-8 rounded-[7px] pr-5 pl-2 text-right font-mono text-xs"
+                />
+              </SmoothCorners>
+              <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground select-none">
                 %
               </span>
             </div>
@@ -785,48 +774,14 @@ function ColorPickerPanel({
       )}
 
       {/* 预设色卡 */}
-      {presetColors !== false && presetColors.length > 0 && (
-        <div className="space-y-1.5">
-          <p className="text-[11px] font-medium text-muted-foreground">
-            {labels.presets}
-          </p>
-          <div className="grid grid-cols-8 gap-1">
-            {presetColors.map((c) => (
-              <Swatch
-                key={c}
-                color={c}
-                active={color.toUpperCase() === c.toUpperCase()}
-                size="sm"
-                onClick={() => onColorSelect(c)}
-                smoothCorners={smoothCorners}
-                smoothCornerSmoothing={smoothCornerSmoothing}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      {presetColors !== false &&
+        presetColors.length > 0 &&
+        swatchGroup(labels.presets, presetColors)}
 
       {/* 最近使用 */}
-      {showRecent && recentColors.length > 0 && (
-        <div className="space-y-1.5">
-          <p className="text-[11px] font-medium text-muted-foreground">
-            {labels.recent}
-          </p>
-          <div className="grid grid-cols-8 gap-1">
-            {recentColors.map((c) => (
-              <Swatch
-                key={c}
-                color={c}
-                active={color.toUpperCase() === c.toUpperCase()}
-                size="sm"
-                onClick={() => onColorSelect(c)}
-                smoothCorners={smoothCorners}
-                smoothCornerSmoothing={smoothCornerSmoothing}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      {showRecent &&
+        recentColors.length > 0 &&
+        swatchGroup(labels.recent, recentColors)}
     </div>
   );
 }
@@ -835,10 +790,10 @@ function ColorPickerPanel({
 /*  主组件                                                         */
 /* ────────────────────────────────────────────────────────────── */
 
-const TRIGGER_SIZES = {
-  sm: "size-7",
-  md: "size-8",
-  lg: "size-9",
+const TRIGGER_STYLES = {
+  sm: { size: "size-7", radius: 7, rounded: "rounded-[7px]" },
+  md: { size: "size-8", radius: 8, rounded: "rounded-[8px]" },
+  lg: { size: "size-9", radius: 9, rounded: "rounded-[9px]" },
 } as const;
 
 /** ColorPicker 组件的属性 */
@@ -916,7 +871,8 @@ export interface ColorPickerProps {
   triggerSize?: "sm" | "md" | "lg";
   /**
    * 是否启用 Figma/iOS 风格平滑圆角。
-   * 启用后会对触发器、弹层/内嵌容器、SV 面板、颜色预览与小色块做渐进增强。
+   * 启用后会对触发器、弹层/内嵌容器、SV 面板、输入框、颜色预览与小色块做渐进增强；
+   * 容器圆角 = 内层圆角 + 内边距，四角的内外轮廓间距处处相等。
    * @default true
    */
   smoothCorners?: boolean;
@@ -1124,63 +1080,58 @@ export function ColorPicker({
       <div className={cn("inline-block", className)}>
         <SmoothCorners
           asChild
-          radius={8}
+          radius={SURFACE_RADIUS}
           smoothing={smoothCornerSmoothing}
           disabled={!smoothCorners}
         >
-          <div className={cn("rounded-md p-1", contentClassName)}>{panel}</div>
+          <div
+            className={cn(
+              "rounded-[17px] bg-popover p-2.5 text-popover-foreground shadow-xs ring-1 ring-foreground/10",
+              contentClassName,
+            )}
+          >
+            {panel}
+          </div>
         </SmoothCorners>
       </div>
     );
   }
+
+  const trigger = TRIGGER_STYLES[triggerSize];
 
   return (
     <Popover>
       <PopoverTrigger asChild disabled={disabled}>
         <SmoothCorners
           asChild
-          radius={8}
+          radius={trigger.radius}
           smoothing={smoothCornerSmoothing}
           disabled={!smoothCorners}
         >
           <button
             type="button"
             className={cn(
-              TRIGGER_SIZES[triggerSize],
-              showAlpha && "relative overflow-hidden",
-              "rounded-md border-2 border-border shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+              trigger.size,
+              trigger.rounded,
+              "relative shrink-0 overflow-hidden shadow-xs transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50",
               triggerClassName,
               className,
             )}
-            style={showAlpha ? undefined : { backgroundColor: color }}
             disabled={disabled}
             aria-label={labels.trigger(outputColor)}
           >
-            {showAlpha && (
-              <>
-                <div
-                  className="absolute inset-0"
-                  style={CHECKERBOARD_STYLE}
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    backgroundColor: hexToRgbaString(color, alpha),
-                  }}
-                />
-              </>
-            )}
+            <ColorFill color={color} alpha={alpha} showAlpha={showAlpha} />
           </button>
         </SmoothCorners>
       </PopoverTrigger>
       <SmoothCorners
         asChild
-        radius={8}
+        radius={SURFACE_RADIUS}
         smoothing={smoothCornerSmoothing}
         disabled={!smoothCorners}
       >
         <PopoverContent
-          className={cn("w-auto p-3", contentClassName)}
+          className={cn("w-auto rounded-[17px] p-2.5", contentClassName)}
           align="start"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >

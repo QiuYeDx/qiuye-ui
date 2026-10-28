@@ -300,7 +300,7 @@ export function ColorPickerDemo() {
             <div className="space-y-1.5">
               <CardTitle>平滑圆角</CardTitle>
               <CardDescription>
-                默认启用渐进增强平滑圆角，也可关闭或调整平滑强度
+                默认启用渐进增强平滑圆角，也可关闭或调整平滑强度；容器圆角由内层圆角加内边距推出，四角内外间距一致
               </CardDescription>
             </div>
             <ViewSourceButton

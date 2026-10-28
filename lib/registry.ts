@@ -4276,7 +4276,7 @@ export const componentRegistry: ComponentRegistry = {
         name: "smoothCorners",
         type: "boolean",
         description:
-          "是否对触发器、弹层/内嵌容器、SV 面板、颜色预览与小色块启用 Figma/iOS 风格平滑圆角",
+          "是否对触发器、弹层/内嵌容器、SV 面板、输入框、颜色预览与小色块启用 Figma/iOS 风格平滑圆角；容器圆角 = 内层圆角 + 内边距，四角内外轮廓间距一致",
         required: false,
         default: "true",
       },
@@ -4313,7 +4313,7 @@ export const componentRegistry: ComponentRegistry = {
         required: false,
       },
     ],
-    version: "1.0.0",
+    version: "1.1.0",
     author: "QiuYeDx",
     tags: [
       "color",
